@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flywheel Assessor App — Operational Proposal</title>
+  <style>
+    /* Base Styles */
+    :root {
+      --flywheel-navy: #1E3A5F;
+      --flywheel-navy-light: #2A5185;
+      --gray-light: #F9FAFB;
+      --gray-border: #E5E7EB;
+      --text-main: #374151;
+      --text-muted: #6B7280;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text-main);
+      line-height: 1.6;
+      margin: 0;
+      padding: 0;
+      background-color: #f3f4f6;
+    }
+
+    /* Print & Document Layout */
+    .document {
+      max-width: 8.5in;
+      margin: 0 auto;
+      background: white;
+    }
+
+    .page {
+      padding: 1in;
+      box-sizing: border-box;
+    }
+
+    /* Typography */
+    h1, h2, h3, h4 {
+      color: var(--flywheel-navy);
+      margin-top: 0;
+      font-weight: 700;
+    }
+
+    h1 { font-size: 2.5rem; letter-spacing: -0.02em; }
+    h2 { 
+      font-size: 1.8rem; 
+      border-bottom: 3px solid var(--flywheel-navy); 
+      padding-bottom: 0.5rem; 
+      margin-top: 2rem; 
+      margin-bottom: 1.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    h3 { font-size: 1.3rem; margin-top: 2rem; margin-bottom: 0.75rem; color: var(--flywheel-navy-light); }
+    
+    p, li { font-size: 1rem; margin-bottom: 1rem; }
+    ul { margin-bottom: 1.5rem; padding-left: 1.5rem; }
+    li { margin-bottom: 0.5rem; }
+
+    /* Cover Page Specifics */
+    .cover-page {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      height: 11in;
+      background-color: var(--flywheel-navy);
+      color: white;
+      padding: 1.5in;
+      box-sizing: border-box;
+    }
+
+    .cover-page h1 {
+      color: white;
+      font-size: 4rem;
+      text-transform: uppercase;
+      line-height: 1.1;
+      margin-bottom: 1rem;
+      border-bottom: 4px solid #F59E0B; /* Amber accent */
+      padding-bottom: 1rem;
+    }
+
+    .cover-page h2 {
+      color: #9CA3AF;
+      border: none;
+      font-size: 1.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-top: 0;
+      margin-bottom: 4rem;
+    }
+
+    .cover-meta {
+      font-size: 1.1rem;
+      color: #D1D5DB;
+    }
+
+    .cover-meta strong {
+      color: white;
+      display: inline-block;
+      min-width: 120px;
+    }
+
+    /* Structural Classes */
+    .page-break { page-break-before: always; }
+    .no-break { page-break-inside: avoid; }
+
+    /* Placeholder Screen */
+    .screenshot-placeholder {
+      background: #F1F5F9;
+      border: 2px dashed #94A3B8;
+      border-radius: 8px;
+      height: 3.5in;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      margin: 1.5rem 0;
+      text-align: center;
+      font-weight: 600;
+      font-size: 1.1rem;
+      page-break-inside: avoid;
+    }
+
+    .screenshot-placeholder span {
+      font-size: 0.9rem;
+      font-weight: 400;
+      margin-top: 0.5rem;
+    }
+
+    /* JSON Block */
+    pre.json-block {
+      background: #1E293B;
+      color: #E2E8F0;
+      padding: 1.5rem;
+      border-radius: 6px;
+      font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
+      font-size: 0.85rem;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      page-break-inside: avoid;
+      border-left: 4px solid #F59E0B;
+    }
+
+    /* Screen Adjustments */
+    @media screen {
+      .document {
+        margin: 2rem auto;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .page {
+        border-bottom: 2px dashed var(--gray-border);
+      }
+    }
+
+    /* Print Adjustments */
+    @media print {
+      body { background: white; }
+      .document { margin: 0; box-shadow: none; max-width: 100%; }
+      .cover-page { 
+        -webkit-print-color-adjust: exact; 
+        print-color-adjust: exact; 
+      }
+      .page { border-bottom: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="document">
+    
+    <!-- COVER PAGE -->
+    <div class="cover-page page-break">
+      <h1>Flywheel Assessor App</h1>
+      <h2>Operational Proposal & Product Overview</h2>
+      
+      <div class="cover-meta">
+        <p><strong>Date:</strong> <span id="current-date"></span></p>
+        <p><strong>Prepared for:</strong> Kevin Byun & Rachel Celis<br>Flywheel Investors LLC</p>
+        <p><strong>Prepared by:</strong> AI Studio Software Team</p>
+      </div>
+    </div>
+
+    <!-- INTRODUCTION & EXEC SUMMARY -->
+    <div class="page page-break">
+      <h2>1. Executive Summary</h2>
+      <p>
+        The Flywheel Assessor App is a purpose-built, military-grade field inspection tool designed specifically for Flywheel Investors' self-storage operations in Texas. Recognizing the unique challenges of managing remote, unstaffed facilities with a lean "Special Ops" team, this mobile-first application replaces scattered paper checklists and disjointed photo galleries with a streamlined, legally defensive digital workflow.
+      </p>
+      <p>
+        By enforcing strict validation frameworks and auto-watermarking visual evidence, the app guarantees that every unit turnover or health-and-safety check meets Flywheel's exacting standards. The core value of this application is delivered across three critical pillars:
+      </p>
+      <ul>
+        <li><strong>Operational Efficiency:</strong> Eliminates guesswork for field runners. Intuitive traffic-light logic dictates exactly when an inspector can mark a unit rent-ready versus when a property manager must intervene, reducing time-on-site and accelerating unit turnover.</li>
+        <li><strong>Legal Compliance (TX Chapter 59):</strong> Provides ironclad documentation. Every captured photo is permanently stamped with the facility name, unit number, and an unalterable timestamp—providing a defensive shield against tenant damage disputes or lien sale challenges.</li>
+        <li><strong>Cloud-Readiness & Offline Resilience:</strong> Engineered to withstand the realities of Texas metal storage buildings. The app works flawlessly without a cellular connection, saving data directly to the device, and seamlessly synchronizing to cloud infrastructure the moment the inspector steps back into coverage.</li>
+      </ul>
+    </div>
+
+    <!-- FEATURE WALKTHROUGH -->
+    <div class="page page-break">
+      <h2>2. Feature Walkthrough</h2>
+
+      <div class="no-break">
+        <h3>2.1 Inspection Type Selection</h3>
+        <p>Operations dictate the mission. The app adapts its entire footprint based on the specific type of inspection being executed (Move-In Baseline, Mid-Tenancy H&S, or Move-Out Turnover), dynamically adjusting the checklist requirements so inspectors don't waste time looking at irrelevant criteria.</p>
+        <div class="screenshot-placeholder">
+          [Insert Screenshot of Inspection Dashboard]
+          <span>Displaying the dropdown menu changing the checklist type.</span>
+        </div>
+      </div>
+
+      <div class="no-break">
+        <h3>2.2 Traffic-Light Compliance Framework</h3>
+        <p>We removed ambiguity from facility checks. Instead of arbitrary lists, physical assets are categorized by operational threat level: <strong>Red Light</strong> (Life Safety & Security—e.g., exposed wiring, broken hasps), <strong>Yellow Light</strong> (Habitability—e.g., severe leaks, heavy debris), and <strong>Green Light</strong> (Cosmetic Rent-Ready visuals—e.g., swept floors). This allows management to instantly triage maintenance priorities.</p>
+        <div class="screenshot-placeholder">
+          [Insert Screenshot of Red/Yellow/Green checklist sections]
+          <span>Displaying the organized tier blocks and clear color coding.</span>
+        </div>
+      </div>
+
+      <div class="no-break">
+        <h3>2.3 Strict Unit Status Logic</h3>
+        <p>The app acts as a strict gateway. A unit cannot accidentally be marketed as Rent-Ready if it is unsafe. Passing the buck is impossible: if an item is bypassed ("Pending"), the unit shows an <strong>INSPECTION IN PROGRESS</strong> banner. A single Red failure throws an <strong>UNSAFE</strong> lock. A Yellow failure triggers a <strong>NOT RENT-READY</strong> status. Only perfection yields a Green <strong>RENT-READY</strong> banner.</p>
+        <div class="screenshot-placeholder">
+          [Insert Screenshot of the 4 Status Banners]
+          <span>Showing the bold, high-visibility status headers.</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="page page-break">
+      <div class="no-break">
+        <h3>2.4 Defensive Photo Watermarking & Linking</h3>
+        <p>In property management, an unmarked photo is a legal liability. When an inspector adds a photo via their native smartphone camera or gallery, a full-screen modal forces them to link that photo to a specific checklist item (e.g., "Fire Sprinkler"). The app then automatically burns a permanent, high-contrast watermark into the bottom right corner of the image, displaying the Facility, Unit Number, Building, and ISO Timestamp. This ensures absolute Chapter 59 compliance.</p>
+        <div class="screenshot-placeholder">
+          [Insert Screenshot of Watermarked Photo and Linking Modal]
+          <span>Left: Item selection modal. Right: Final photo with burnt-in watermark.</span>
+        </div>
+      </div>
+
+      <div class="no-break">
+        <h3>2.5 Photo Evidence Tracker</h3>
+        <p>A unified grid keeps the field team accountable. The tracker demands a minimum of 15 mandated baseline shots (Exterior, Hasp, Door, Wide Interior, etc.). Thumbnails display the watermarked image alongside the name of its linked checklist item, ensuring reviewers know exactly what they are looking at without guessing.</p>
+        <div class="screenshot-placeholder">
+          [Insert Screenshot of Thumbnail Grid]
+          <span>Displaying the 15-photo minimum tracker and labeled thumbnails.</span>
+        </div>
+      </div>
+
+      <div class="no-break">
+        <h3>2.6 Move-Out Delta Report & Repair Claims</h3>
+        <p>Calculating tenant damage chargebacks is now automated. By importing the JSON export from a tenant's "Move-In Baseline", the app runs a side-by-side comparison on the Move-Out. Anything that degraded from 'Pass' to 'Fail' is flagged as <strong>DETERIORATED</strong>. The inspector inputs repair estimates directly into validated, financial-grade fields (preventing negative numbers or typos) to spit out a total claim amount instantly.</p>
+        <div class="screenshot-placeholder">
+          [Insert Screenshot of Delta Report Interface]
+          <span>Displaying the side-by-side comparison and numeric cost inputs.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="page page-break">
+      <div class="no-break">
+        <h3>2.7 Forensic Summary & Manager Handoff</h3>
+        <p>At the close of the inspection, the app compiles a clean Forensic Summary. It strips away all the "Passing" noise and isolates only Failed Items and Runner Notes. It generates a brief checklist for property managers (e.g., "Schedule Maintenance Vendor") to bridge the gap between field execution and back-office administration.</p>
+        <div class="screenshot-placeholder">
+          [Insert Screenshot of the Forensic Summary]
+          <span>Displaying the failed items log and manager task checkboxes.</span>
+        </div>
+      </div>
+
+      <div class="no-break">
+        <h3>2.8 Clean Print View</h3>
+        <p>Whether firing to a local office printer or saving as a PDF for a tenant dispute, the app strips away all app navigation, buttons, and editable inputs to generate a clean, formal document. The print layout auto-paginates and stamps a formal legal footer at the bottom of every page.</p>
+        <div class="screenshot-placeholder">
+          [Insert Screenshot of Print Format/PDF Output]
+          <span>Displaying the black-and-white, formalized layout of the printed report.</span>
+        </div>
+      </div>
+
+      <div class="no-break">
+        <h3>2.9 Offline-First Resilience</h3>
+        <p>Texas metal drive-up buildings block cellular signals. Instead of crashing, the app features an embedded Service Worker and IndexedDB architecture. If the inspector loses signal, a warning banner appears, but they can continue inspecting and photographing. Everything saves locally to the phone. Once leaving the facility and regaining LTE/5G, the app automatically syncs the data outward.</p>
+        <div class="screenshot-placeholder">
+          [Insert Screenshot of Offline Banner]
+          <span>Showing the "Offline Mode (Saving Locally)" and "Syncing" indicators.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPERATIONAL BENEFITS -->
+    <div class="page page-break">
+      <h2>3. Operational Benefits for Flywheel Investors</h2>
+      <p>This software strictly aligns with Flywheel Investors' thesis of bringing operational intensity and capital efficiency to under-managed storage assets.</p>
+      
+      <ul>
+        <li><strong>Force Multiplier for Lean Teams:</strong> The "Special Ops" mindset requires tools that allow one operator to do the work of three. By eliminating duplicate data entry and manual photo-sorting back at the desk, runners can hit more facilities per day.</li>
+        <li><strong>Bulletproof Evictions & Lien Sales:</strong> Texas Property Code Chapter 59 requires strict timelines and irrefutable proof of unit condition or abandonment. Tamper-evident, watermarked photos linked directly to unit statuses protect Flywheel from tenant litigation and wrongful sale claims.</li>
+        <li><strong>Radical Standardization:</strong> Whether taking over a mom-and-pop facility in rural Texas or stabilizing an urban asset, the traffic-light framework ensures every Flywheel property adheres to the exact same safety and visual standards, making portfolio oversight highly predictable for the executive team.</li>
+      </ul>
+
+      <h2>4. Technical Summary</h2>
+      <p>
+        The application is built on a modern, ultra-fast <strong>React</strong> frontend stack utilizing <strong>Google Cloud Run</strong> deployment. It requires zero App Store installations—accessible directly via a secure web URL on any web browser, iPad, or mobile device. By leveraging a "Static SPA" architecture combined with native device Service Workers, the app operates incredibly fast, caches itself for offline-first rural capability, and strictly organizes outputs into structured JSON payloads. This future-proofs the system for immediate integration into Flywheel’s broader backend infrastructure (like automated Slack alerts or specialized database ingests).
+      </p>
+
+      <h2>5. Next Steps & Rollout Strategy</h2>
+      <p>To integrate this capability smoothly into current operations, we recommend the following cadence:</p>
+      <ul>
+        <li><strong>Phase 1: Alpha Field Test.</strong> Deploy the application to a single "point man" inspector for a live Move-In and Move-Out turnover at an active facility to validate the workflow under real-world conditions.</li>
+        <li><strong>Phase 2: Feedback & Tweaks.</strong> Review the generated PDF and JSON telemetry. Adjust specific checklist vocabulary or photo requirements based on the operators' physical constraints.</li>
+        <li><strong>Phase 3: Deep Integration.</strong> Hook the app's JSON export functionality directly into Flywheel's internal databases or communication tools (e.g., posting a message to slack when a "Red/Unsafe" payload hits the server).</li>
+        <li><strong>Phase 4: Full Deployment.</strong> Roll out standardized web-portal access to all regional managers and field runners.</li>
+      </ul>
+    </div>
+
+    <!-- APPENDIX -->
+    <div class="page page-break">
+      <h2>Appendix: JSON Telemetry Schema</h2>
+      <p>The application outputs all inspection data into a highly structured JSON format, guaranteeing easy downstream integration via APIs or Webhooks. Below is the structural schema demonstrating the comprehensive metadata captured during an inspection event.</p>
+      
+      <pre class="json-block">
+{
+  "id": "x8f2kd",
+  "date": "2025-01-15T10:30:00Z",
+  "type": "Move-Out",
+  "facilityName": "Austin South Peak",
+  "unitNumber": "A105",
+  "building": "Bldg 1",
+  "unitType": "Climate-Controlled",
+  "inspectorName": "John Doe",
+  "weather": "85°F Sunny",
+  "items": {
+    "red-fire-sprinkler": {
+      "id": "red-fire-sprinkler",
+      "tier": "Red",
+      "text": "Fire Sprinkler / Alarm Status",
+      "status": "Fail",
+      "note": "Sprinkler head blocked by tenant boxes."
+    }
+    // ... [Additional checklist items omitted for brevity]
+  },
+  "photos": [
+    {
+      "id": "p_1j4l8k",
+      "dataUri": "data:image/jpeg;base64,...[watermarked graphic data]...",
+      "caption": "",
+      "timestamp": "2025-01-15T10:35:12Z",
+      "linkedItemId": "red-fire-sprinkler",
+      "facilityName": "Austin South Peak",
+      "unitNumber": "A105",
+      "buildingFloor": "Bldg 1"
+    }
+  ],
+  "deltaItems": {
+    "red-fire-sprinkler": {
+      "id": "red-fire-sprinkler",
+      "tier": "Red",
+      "text": "Fire Sprinkler / Alarm Status",
+      "status": "Fail",
+      "note": "Sprinkler head blocked by tenant boxes.",
+      "baselineStatus": "Pass",
+      "isDeteriorated": true,
+      "repairCostEstimate": 150.00
+    }
+  },
+  "runnerNotes": "Heavy tenant debris left behind. Requires full cleanout crew.",
+  "managerFollowUp": {
+    "Schedule Maintenance Vendor": true,
+    "Review Move-In Baseline JSON": true
+  }
+}
+      </pre>
+    </div>
+
+  </div>
+
+  <script>
+    // Set the current date dynamically for the cover
+    document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    });
+  </script>
+</body>
+</html>
