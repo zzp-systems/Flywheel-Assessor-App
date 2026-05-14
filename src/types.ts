@@ -8,6 +8,7 @@ export interface ChecklistItem {
   text: string;
   status: Status;
   note: string;
+  baselineId?: string;
 }
 
 export interface Photo {

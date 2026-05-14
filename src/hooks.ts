@@ -7,7 +7,7 @@ const STORE_NAME = 'inspections';
 
 function openDB() {
   return new Promise<IDBDatabase>((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
+    const request = window.indexedDB.open(DB_NAME, 1);
     request.onupgradeneeded = (e) => {
       const db = (e.target as IDBOpenDBRequest).result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
@@ -236,8 +236,8 @@ export function useInspection() {
         // Alternatively, since items differ, we can just attach the baseline items to the delta report.
         
         Object.values(prev.items).forEach(item => {
-          // Attempt to find semantic match by checking text similarity or just check Red ones
-          const baselineItem = Object.values(baselineData.items).find(b => b.text === item.text || b.id === item.id);
+          // Check baselineId first if available, otherwise fallback to id or text match
+          const baselineItem = Object.values(baselineData.items).find(b => b.id === item.baselineId || b.id === item.id || b.text === item.text);
           if (baselineItem) {
             deltaItems[item.id] = {
               ...item,

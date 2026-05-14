@@ -36,13 +36,13 @@ export const YELLOW_LIGHT_ITEMS: Record<InspectionType, Omit<ChecklistItem, 'sta
     { id: 'y-mid-8', tier: 'Yellow', text: 'Unit access — no obstructions' }
   ],
   'Move-Out': [
-    { id: 'y-moveout-1', tier: 'Yellow', text: 'HVAC / climate control — still operational? Note new damage' },
-    { id: 'y-moveout-2', tier: 'Yellow', text: 'Plumbing / sump pump — new leaks or damage' },
-    { id: 'y-moveout-3', tier: 'Yellow', text: 'Lighting — broken fixtures/missing bulbs' },
-    { id: 'y-moveout-4', tier: 'Yellow', text: 'Water intrusion — new stains, mold, or odor' },
-    { id: 'y-moveout-5', tier: 'Yellow', text: 'Pest activity — new infestation evidence' },
-    { id: 'y-moveout-6', tier: 'Yellow', text: 'Roll-up door — new dents, damaged seal, broken spring' },
-    { id: 'y-moveout-7', tier: 'Yellow', text: 'Unit interior surfaces — new holes, deep scratches, paint damage' },
+    { id: 'y-moveout-1', tier: 'Yellow', text: 'HVAC / climate control — still operational? Note new damage', baselineId: 'y-movein-1' },
+    { id: 'y-moveout-2', tier: 'Yellow', text: 'Plumbing / sump pump — new leaks or damage', baselineId: 'y-movein-3' },
+    { id: 'y-moveout-3', tier: 'Yellow', text: 'Lighting — broken fixtures/missing bulbs', baselineId: 'y-movein-4' },
+    { id: 'y-moveout-4', tier: 'Yellow', text: 'Water intrusion — new stains, mold, or odor', baselineId: 'y-movein-5' },
+    { id: 'y-moveout-5', tier: 'Yellow', text: 'Pest activity — new infestation evidence', baselineId: 'y-movein-6' },
+    { id: 'y-moveout-6', tier: 'Yellow', text: 'Roll-up door — new dents, damaged seal, broken spring', baselineId: 'y-movein-7' },
+    { id: 'y-moveout-7', tier: 'Yellow', text: 'Unit interior surfaces — new holes, deep scratches, paint damage', baselineId: 'y-movein-9' },
     { id: 'y-moveout-8', tier: 'Yellow', text: 'Overall condition compared to baseline' }
   ]
 };
@@ -62,12 +62,12 @@ export const GREEN_LIGHT_ITEMS: Record<InspectionType, Omit<ChecklistItem, 'stat
     { id: 'g-mid-2', tier: 'Green', text: 'Trash / dumpster area — no overflow from tenant' }
   ],
   'Move-Out': [
-    { id: 'g-moveout-1', tier: 'Green', text: 'Unit cleanliness — swept, no odors left' },
-    { id: 'g-moveout-2', tier: 'Green', text: 'Hallway cleanliness — clear' },
-    { id: 'g-moveout-3', tier: 'Green', text: 'Signage — still legible' },
-    { id: 'g-moveout-4', tier: 'Green', text: 'Keypad / access control — still functional' },
-    { id: 'g-moveout-5', tier: 'Green', text: 'Paint / wall condition — ready for touch-up' },
-    { id: 'g-moveout-6', tier: 'Green', text: 'Trash / dumpster area — tenant trash removed' },
-    { id: 'g-moveout-7', tier: 'Green', text: 'Landscaping — no damage from move-out' }
+    { id: 'g-moveout-1', tier: 'Green', text: 'Unit cleanliness — swept, no odors left', baselineId: 'g-movein-1' },
+    { id: 'g-moveout-2', tier: 'Green', text: 'Hallway cleanliness — clear', baselineId: 'g-movein-2' },
+    { id: 'g-moveout-3', tier: 'Green', text: 'Signage — still legible', baselineId: 'g-movein-3' },
+    { id: 'g-moveout-4', tier: 'Green', text: 'Keypad / access control — still functional', baselineId: 'g-movein-4' },
+    { id: 'g-moveout-5', tier: 'Green', text: 'Paint / wall condition — ready for touch-up', baselineId: 'g-movein-5' },
+    { id: 'g-moveout-6', tier: 'Green', text: 'Trash / dumpster area — tenant trash removed', baselineId: 'g-movein-6' },
+    { id: 'g-moveout-7', tier: 'Green', text: 'Landscaping — no damage from move-out', baselineId: 'g-movein-7' }
   ]
 };

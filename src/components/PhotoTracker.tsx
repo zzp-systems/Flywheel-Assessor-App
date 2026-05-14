@@ -58,7 +58,7 @@ const applyWatermark = (base64Image: string, facilityName: string, unitNumber: s
          ctx.fillText(line, canvas.width - padding, lineY);
       });
 
-      resolve(canvas.toDataURL('image/jpeg', 0.85));
+      resolve(canvas.toDataURL('image/png'));
     };
     img.onerror = () => resolve(base64Image);
     img.src = base64Image;

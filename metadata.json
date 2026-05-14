@@ -1,6 +1,10 @@
 {
-  "name": "",
-  "description": "",
-  "requestFramePermissions": [],
+  "name": "Flywheel Assessor App",
+  "description": "An offline-first, mobile-optimized procedural inspection tool built specifically for Flywheel Investors' self-storage portfolios. Supports Red/Yellow/Green compliance checks and legal notice generation.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ],
   "majorCapabilities": []
 }
