@@ -1,9 +1,9 @@
 import React from 'react';
-import { InspectionData, ChecklistItem, Status, Tier } from '../types';
+import { AssessmentData, ChecklistItem, Status, Tier } from '../types';
 import { CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 
 interface ChecklistViewProps {
-  data: InspectionData;
+  data: AssessmentData;
   updateStatus: (id: string, status: Status) => void;
   updateNote: (id: string, note: string) => void;
 }
@@ -14,6 +14,7 @@ export function ChecklistView({ data, updateStatus, updateNote }: ChecklistViewP
   const redItems = itemsArray.filter(i => i.tier === 'Red');
   const yellowItems = itemsArray.filter(i => i.tier === 'Yellow');
   const greenItems = itemsArray.filter(i => i.tier === 'Green');
+  const slateItems = itemsArray.filter(i => i.tier === 'Slate');
 
   const renderTier = (title: string, items: ChecklistItem[], colorClass: string, bgColor: string, borderClass: string, desc: string, icon: React.ReactNode) => {
     if (items.length === 0) return null;
@@ -119,6 +120,15 @@ export function ChecklistView({ data, updateStatus, updateNote }: ChecklistViewP
         "border-brand-green",
         "RENT-READY VISUALS - Cleanliness & Basics.",
         <CheckCircle2 size={28} strokeWidth={3} />
+      )}
+      {renderTier(
+        "🔑 Access Credentials & Issued Items", 
+        slateItems, 
+        "text-white", 
+        "bg-gray-800", 
+        "border-gray-800",
+        "Security & Hardware Management.",
+        <span className="text-xl">🔑</span>
       )}
     </div>
   );

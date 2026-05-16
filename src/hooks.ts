@@ -1,23 +1,31 @@
 import { useState, useEffect, useCallback } from 'react';
-import { InspectionData, InspectionType, ChecklistItem, Status, Tier } from './types';
-import { RED_LIGHT_ITEMS, YELLOW_LIGHT_ITEMS, GREEN_LIGHT_ITEMS } from './data';
+import { AssessmentData, AssessmentType, ChecklistItem, Status, Tier } from './types';
+import { RED_LIGHT_ITEMS, YELLOW_LIGHT_ITEMS, GREEN_LIGHT_ITEMS, SLATE_LIGHT_ITEMS } from './data';
 
-const DB_NAME = 'FlywheelInspectionDB';
-const STORE_NAME = 'inspections';
+const DB_NAME = 'FlywheelAssessmentDB';
+const STORE_NAME = 'assessments';
 
 function openDB() {
   return new Promise<IDBDatabase>((resolve, reject) => {
-    const request = window.indexedDB.open(DB_NAME, 1);
+    const request = window.indexedDB.open(DB_NAME, 2);
     request.onupgradeneeded = (e) => {
       const db = (e.target as IDBOpenDBRequest).result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME);
+      if (db.objectStoreNames.contains(STORE_NAME)) {
+        db.deleteObjectStore(STORE_NAME);
       }
+      db.createObjectStore(STORE_NAME);
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
 }
+
+// Ensure offline_queue store also exists... Wait, they are using the same STORE_NAME for offline_queue?
+// The previous code did: tx.objectStore(STORE_NAME).put(data, key);
+// Wait! If keyPath is defined, we can't use put(data, key) if data contains the key. But for `offline_queue`, data is an array!
+// So previously, `saveToDB('offline_queue', [...])` would put an array into STORE_NAME. If we set keyPath to 'id', we can't put an array or a primitive.
+// It's better to omit keyPath, or create a separate STORE_NAME for offline_queue.
+// Let's modify DB setup.
 
 async function saveToDB(key: string, data: any) {
   try {
@@ -41,7 +49,7 @@ async function loadFromDB(key: string) {
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
-function initializeItems(type: InspectionType): Record<string, ChecklistItem> {
+function initializeItems(type: AssessmentType): Record<string, ChecklistItem> {
   const items: Record<string, ChecklistItem> = {};
   
   const addItems = (defs: Omit<ChecklistItem, 'status' | 'note'>[]) => {
@@ -57,15 +65,16 @@ function initializeItems(type: InspectionType): Record<string, ChecklistItem> {
   addItems(RED_LIGHT_ITEMS);
   addItems(YELLOW_LIGHT_ITEMS[type]);
   addItems(GREEN_LIGHT_ITEMS[type]);
+  addItems(SLATE_LIGHT_ITEMS[type]);
 
   return items;
 }
 
-export function useInspection() {
-  const [data, setData] = useState<InspectionData>(() => {
+export function useAssessment() {
+  const [data, setData] = useState<AssessmentData>(() => {
     return {
       id: generateId(),
-      type: 'Move-In Baseline',
+      type: 'Move-In Assessment Report',
       facilityName: '',
       unitNumber: '',
       building: '',
@@ -73,7 +82,7 @@ export function useInspection() {
       inspectorName: '',
       date: new Date().toISOString().slice(0, 16),
       weather: '',
-      items: initializeItems('Move-In Baseline'),
+      items: initializeItems('Move-In Assessment Report'),
       photos: [],
       runnerNotes: '',
       managerFollowUp: {
@@ -103,7 +112,7 @@ export function useInspection() {
     setIsSyncing(true);
     // Simulate upload delay
     setTimeout(async () => {
-      console.log('Successfully uploaded inspections:', queue);
+      console.log('Successfully uploaded assessments:', queue);
       await saveToDB('offline_queue', []);
       setPendingSyncCount(0);
       setIsSyncing(false);
@@ -132,7 +141,7 @@ export function useInspection() {
   }, []);
 
   useEffect(() => {
-    loadFromDB('current_inspection').then(saved => {
+    loadFromDB('current_assessment').then(saved => {
       if (saved) {
         setData(saved);
       }
@@ -142,15 +151,15 @@ export function useInspection() {
 
   useEffect(() => {
     if (isLoaded) {
-      saveToDB('current_inspection', data);
+      saveToDB('current_assessment', data);
     }
   }, [data, isLoaded]);
 
-  const updateField = <K extends keyof InspectionData>(field: K, value: InspectionData[K]) => {
+  const updateField = <K extends keyof AssessmentData>(field: K, value: AssessmentData[K]) => {
     setData(prev => ({ ...prev, [field]: value }));
   };
 
-  const changeType = (newType: InspectionType) => {
+  const changeType = (newType: AssessmentType) => {
     // Preserve Red Light items as they are universal, reset others
     setData(prev => {
       const newItems = initializeItems(newType);
@@ -183,16 +192,18 @@ export function useInspection() {
     }));
   };
 
-  const addPhoto = (dataUri: string, linkedItemId?: string, metadata?: { facilityName: string, unitNumber: string, buildingFloor: string }) => {
+  const addPhoto = (dataUri: string, linkedItemId?: string, metadata?: { facilityName: string, unitNumber: string, buildingFloor: string, caption?: string }) => {
     setData(prev => ({
       ...prev,
       photos: [...prev.photos, {
         id: generateId(),
         dataUri,
-        caption: '',
+        caption: metadata?.caption || '',
         timestamp: new Date().toISOString(),
         linkedItemId,
-        ...metadata
+        facilityName: metadata?.facilityName,
+        unitNumber: metadata?.unitNumber,
+        buildingFloor: metadata?.buildingFloor
       }]
     }));
   };
@@ -214,39 +225,57 @@ export function useInspection() {
     }));
   };
 
-  // Delta Report logic
+  const [pendingMappings, setPendingMappings] = useState<any>(null);
+
   const importBaseline = (baselineJson: string) => {
     try {
-      const baselineData: InspectionData = JSON.parse(baselineJson);
-      if (baselineData.type !== 'Move-In Baseline') {
-        alert('Imported JSON is not a Move-In Baseline report.');
+      const baselineData: AssessmentData = JSON.parse(baselineJson);
+      if (baselineData.type !== 'Move-In Assessment Report') {
+        alert('Imported JSON is not a Move-In Assessment Report.');
         return;
       }
 
       setData(prev => {
         const deltaItems: Record<string, any> = {};
-        
-        // Only compare items that exist in current Move-Out checklist (but IDs differ between Move-In and Move-Out)
-        // Actually, we must compare based on some heuristic or semantic meaning, 
-        // OR compare the Red items directly since IDs match.
-        // For Yellow/Green, the IDs differ between Move-In and Move-Out checklists.
-        // Let's implement a generalized comparison: we map items by their text or just flag the move-out ones.
-        // Given the prompt: "compare each item's status between the two reports... flag items changed from Pass to Fail".
-        // It's simplest to compare identical IDs (Red) or require users to just view the baseline alongside.
-        // Alternatively, since items differ, we can just attach the baseline items to the delta report.
-        
-        Object.values(prev.items).forEach(item => {
-          // Check baselineId first if available, otherwise fallback to id or text match
-          const baselineItem = Object.values(baselineData.items).find(b => b.id === item.baselineId || b.id === item.id || b.text === item.text);
-          if (baselineItem) {
+        const ambiguous: any[] = [];
+        const baselineItemsList = Object.values(baselineData.items);
+
+        Object.values(prev.items).forEach((item: any) => {
+          let candidates = baselineItemsList.filter((b: any) => {
+            if (item.baselineId && item.baselineId === b.id) return true;
+            if (b.id === item.id) return true;
+            return false;
+          });
+
+          if (candidates.length === 0) {
+            // Text matching fallback
+            const normText = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const itemNorm = normText(item.text.split('—')[0]);
+            candidates = baselineItemsList.filter((b: any) => normText(b.text.split('—')[0]) === itemNorm);
+          }
+
+          if (candidates.length === 1) {
+            const baselineItem: any = candidates[0];
             deltaItems[item.id] = {
               ...item,
               baselineStatus: baselineItem.status,
               isDeteriorated: baselineItem.status === 'Pass' && item.status === 'Fail',
               repairCostEstimate: 0
             };
+          } else if (candidates.length > 1) {
+            ambiguous.push({ item, candidates });
           }
         });
+
+        if (ambiguous.length > 0) {
+          setPendingMappings({
+            ambiguous,
+            baselineData,
+            deltaItems,
+            snapshotPrev: prev
+          });
+          return prev; // Delay update until resolved
+        }
 
         return { ...prev, deltaItems };
       });
@@ -254,6 +283,32 @@ export function useInspection() {
       alert('Invalid JSON format.');
     }
   };
+
+  const cancelMapping = () => setPendingMappings(null);
+
+  const confirmMapping = (resolvedMappings: Record<string, string>) => {
+    if (!pendingMappings) return;
+    setData((prev) => {
+      const newDelta = { ...pendingMappings.deltaItems };
+      const baselineItems = pendingMappings.baselineData.items;
+
+      pendingMappings.ambiguous.forEach((amb: any) => {
+        const resolvedId = resolvedMappings[amb.item.id];
+        if (resolvedId && baselineItems[resolvedId]) {
+          const baselineItem: any = baselineItems[resolvedId];
+          newDelta[amb.item.id] = {
+            ...amb.item,
+            baselineStatus: baselineItem.status,
+            isDeteriorated: baselineItem.status === 'Pass' && amb.item.status === 'Fail',
+            repairCostEstimate: 0
+          };
+        }
+      });
+      return { ...prev, deltaItems: newDelta };
+    });
+    setPendingMappings(null);
+  };
+
 
   const updateDeltaCost = (id: string, cost: number) => {
     setData(prev => {
@@ -268,7 +323,36 @@ export function useInspection() {
     });
   };
 
-  const queueInspection = async () => {
+  const addWorkOrder = (item: ChecklistItem) => {
+    setData(prev => {
+      const workOrders = prev.workOrders || [];
+      if (workOrders.some(wo => wo.itemId === item.id)) {
+        return prev;
+      }
+      return {
+        ...prev,
+        workOrders: [
+          ...workOrders,
+          {
+            workOrderId: generateId(),
+            itemId: item.id,
+            itemText: item.text,
+            tier: item.tier,
+            note: item.note,
+            facilityName: prev.facilityName,
+            unitNumber: prev.unitNumber,
+            buildingFloor: prev.building,
+            inspectorName: prev.inspectorName,
+            dateCreated: new Date().toISOString(),
+            priority: item.tier === 'Red' ? 'Critical' : 'Routine',
+            status: 'Open'
+          }
+        ]
+      };
+    });
+  };
+
+  const queueAssessment = async () => {
     const queue = await loadFromDB('offline_queue') || [];
     queue.push({
       ...data,
@@ -298,6 +382,10 @@ export function useInspection() {
     toggleFollowUp,
     importBaseline,
     updateDeltaCost,
-    queueInspection
+    pendingMappings,
+    cancelMapping,
+    confirmMapping,
+    addWorkOrder,
+    queueAssessment
   };
 }

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { InspectionData } from '../types';
+import { AssessmentData } from '../types';
 import { Download, Copy, Code, Check } from 'lucide-react';
 
-export function JsonOutput({ data }: { data: InspectionData }) {
+export function JsonOutput({ data }: { data: AssessmentData }) {
   const [copied, setCopied] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -26,7 +26,7 @@ export function JsonOutput({ data }: { data: InspectionData }) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `Flywheel-Inspection-${data.type.replace(/ /g, '-')}-${data.unitNumber}-${data.date.slice(0,10)}.json`;
+    link.download = `Flywheel-Assessment-${data.type.replace(/ /g, '-')}-${data.unitNumber}-${data.date.slice(0,10)}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -47,7 +47,7 @@ export function JsonOutput({ data }: { data: InspectionData }) {
     <div className="bg-gray-900 rounded-lg overflow-hidden border border-gray-700 mt-8 mb-20 no-print">
       <div className="flex justify-between items-center p-3 border-b border-gray-800 bg-gray-950">
         <h3 className="text-sm font-mono text-gray-300 flex items-center gap-2">
-          <Code size={14} /> inspection_data.json
+          <Code size={14} /> assessment_data.json
         </h3>
         <div className="flex gap-2">
           <button 

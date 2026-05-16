@@ -1,5 +1,5 @@
-export type InspectionType = 'Move-In Baseline' | 'Mid-Tenancy' | 'Move-Out';
-export type Tier = 'Red' | 'Yellow' | 'Green';
+export type AssessmentType = 'Move-In Assessment Report' | 'Unit Health & Safety Assessment' | 'Move-Out Assessment Report';
+export type Tier = 'Red' | 'Yellow' | 'Green' | 'Slate';
 export type Status = 'Pass' | 'Fail' | 'N/A' | 'Pending';
 
 export interface ChecklistItem {
@@ -28,9 +28,24 @@ export interface DeltaItem extends ChecklistItem {
   repairCostEstimate: number;
 }
 
-export interface InspectionData {
+export interface WorkOrder {
+  workOrderId: string;
+  itemId: string;
+  itemText: string;
+  tier: Tier;
+  note: string;
+  facilityName: string;
+  unitNumber: string;
+  buildingFloor: string;
+  inspectorName: string;
+  dateCreated: string;
+  priority: 'Critical' | 'Routine';
+  status: 'Open';
+}
+
+export interface AssessmentData {
   id: string;
-  type: InspectionType;
+  type: AssessmentType;
   facilityName: string;
   unitNumber: string;
   building: string;
@@ -47,4 +62,5 @@ export interface InspectionData {
   signatureTimestamp?: string;
   tenantSignature?: string;
   tenantName?: string;
+  workOrders?: WorkOrder[];
 }

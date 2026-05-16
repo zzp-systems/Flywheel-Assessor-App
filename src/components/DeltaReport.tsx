@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { InspectionData } from '../types';
+import { AssessmentData } from '../types';
 import { FileDown, RefreshCcw } from 'lucide-react';
 
 interface DeltaReportProps {
-  data: InspectionData;
+  data: AssessmentData;
   onImportBaseline: (json: string) => void;
   onUpdateCost: (id: string, cost: number) => void;
 }
@@ -28,10 +28,10 @@ export function DeltaReport({ data, onImportBaseline, onUpdateCost }: DeltaRepor
     }
   }, [data.deltaItems]);
 
-  if (data.type !== 'Move-Out') return null;
+  if (data.type !== 'Move-Out Assessment Report') return null;
 
   const handleImport = () => {
-    const userInput = prompt('Paste the Move-In Baseline JSON output here:');
+    const userInput = prompt('Paste the Move-In Assessment Report JSON output here:');
     if (userInput) {
       onImportBaseline(userInput);
     }
@@ -63,9 +63,9 @@ export function DeltaReport({ data, onImportBaseline, onUpdateCost }: DeltaRepor
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b-4 border-gray-100">
         <div>
           <h3 className="text-2xl font-display font-black text-brand-navy flex items-center gap-3 uppercase tracking-widest">
-            <RefreshCcw size={24} strokeWidth={3} /> Move-Out Delta Report
+            <RefreshCcw size={24} strokeWidth={3} /> Move-Out Assessment Report Delta Report
           </h3>
-          <p className="text-sm font-bold text-gray-500 mt-1">Compare against Move-In Baseline to calculate damage claims.</p>
+          <p className="text-sm font-bold text-gray-500 mt-1">Compare against Move-In Assessment Report to calculate damage claims.</p>
         </div>
         
         <button 

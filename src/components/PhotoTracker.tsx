@@ -1,14 +1,14 @@
 import React, { useRef, useState } from 'react';
 import { Camera, X, Image as ImageIcon } from 'lucide-react';
-import { ChecklistItem } from '../types';
+import { ChecklistItem, Photo } from '../types';
 
 interface PhotoTrackerProps {
-  photos: { id: string, dataUri: string, linkedItemId?: string, unitNumber?: string }[];
+  photos: Photo[];
   items: Record<string, ChecklistItem>;
   facilityName: string;
   unitNumber: string;
   building: string;
-  onAddPhoto: (uri: string, linkedItemId: string, metadata: { facilityName: string, unitNumber: string, buildingFloor: string }) => void;
+  onAddPhoto: (uri: string, linkedItemId: string, metadata: { facilityName: string, unitNumber: string, buildingFloor: string, caption?: string }) => void;
   onRemovePhoto: (id: string) => void;
 }
 
@@ -70,6 +70,26 @@ export function PhotoTracker({ photos, items, facilityName, unitNumber, building
   const [pendingPhoto, setPendingPhoto] = useState<string | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string>('');
 
+  const requiredShots = [
+    'Exterior front of facility (with signage)',
+    'Unit exterior door (with unit number visible)',
+    'Wide shot of unit interior (all corners if large)',
+    'Thermostat / HVAC control reading (if climate‑controlled)',
+    'Electrical panel interior',
+    'Under sinks / near plumbing (if applicable)',
+    'Gate access control panel',
+    'Roll‑up door track & weather seal',
+    'Overhead door spring assembly',
+    'Fire extinguisher tag / date',
+    'Any damage, safety issues, or pest evidence',
+    'Hallway condition (both directions from unit)',
+    'Trash area / dumpster',
+    'General security camera overview',
+    'Additional context shot'
+  ];
+
+  const slugify = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -92,10 +112,17 @@ export function PhotoTracker({ photos, items, facilityName, unitNumber, building
     if (pendingPhoto && selectedItemId) {
       const timestamp = new Date().toISOString();
       const watermarkedUri = await applyWatermark(pendingPhoto, facilityName, unitNumber, building, timestamp);
+      
+      let caption = '';
+      if (selectedItemId.startsWith('required-shot-')) {
+        caption = requiredShots.find(s => `required-shot-${slugify(s)}` === selectedItemId) || '';
+      }
+
       onAddPhoto(watermarkedUri, selectedItemId, {
         facilityName,
         unitNumber,
-        buildingFloor: building
+        buildingFloor: building,
+        caption
       });
       setPendingPhoto(null);
     }
@@ -108,40 +135,57 @@ export function PhotoTracker({ photos, items, facilityName, unitNumber, building
   const redItems = Object.values(items).filter(i => i.tier === 'Red');
   const yellowItems = Object.values(items).filter(i => i.tier === 'Yellow');
   const greenItems = Object.values(items).filter(i => i.tier === 'Green');
+  const slateItems = Object.values(items).filter(i => i.tier === 'Slate');
 
-  const requiredShots = [
-    'Exterior front', 'Unit door', 'Wide interior', 'Thermostat/HVAC', 
-    'Electrical panel', 'Under sinks', 'Gate control panel', 'Damage/pest evidence', 
-    'Hallway condition'
-  ];
+  const coveredRequiredShots = new Set(
+    photos
+      .filter(p => p.linkedItemId?.startsWith('required-shot-'))
+      .map(p => p.linkedItemId)
+  );
+
+  const totalRequired = requiredShots.length;
+  const uniqueRequiredCaptured = coveredRequiredShots.size;
 
   return (
     <>
     <div className="bg-white rounded-xl shadow-lg border-2 border-gray-200 p-5 md:p-8 mb-8 no-print">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3 border-b-2 border-gray-100 pb-4">
         <h3 className="text-2xl font-display font-black text-brand-navy uppercase tracking-widest">Photo Evidence Tracker</h3>
-        <div className="text-sm font-bold bg-brand-navy text-white px-4 py-1.5 rounded-full shadow-inner">
-          {photos.length} / 15 Minimum
+        <div className={`text-sm font-bold px-4 py-1.5 rounded-full shadow-inner ${uniqueRequiredCaptured >= totalRequired ? 'bg-brand-green text-white' : 'bg-brand-navy text-white'}`}>
+          Required Shots: {uniqueRequiredCaptured} / {totalRequired}
         </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="col-span-1 md:border-r-4 border-gray-100 pr-4">
           <p className="text-xs font-display font-bold text-gray-500 uppercase tracking-widest bg-gray-100 inline-block px-3 py-1 rounded mb-4">Required Shots</p>
-          <ul className="text-sm space-y-2 text-gray-700 font-medium">
-            {requiredShots.map((shot, i) => (
-              <li key={i} className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-brand-amber shadow-sm"></div>
-                {shot}
-              </li>
-            ))}
+          <ul className="text-xs space-y-2 text-gray-700 font-medium">
+            {requiredShots.map((shot, i) => {
+              const slug = `required-shot-${slugify(shot)}`;
+              const isCovered = coveredRequiredShots.has(slug);
+              return (
+                <li key={i} className={`flex items-start gap-2 ${isCovered ? 'text-brand-green' : 'text-gray-600'}`}>
+                  <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 shadow-sm ${isCovered ? 'bg-brand-green' : 'bg-gray-300'}`}></div>
+                  <span className={isCovered ? 'line-through opacity-70' : ''}>{shot}</span>
+                </li>
+              );
+            })}
           </ul>
         </div>
         
         <div className="col-span-1 md:col-span-2">
           <div className="flex flex-wrap gap-4">
             {photos.map(p => {
-              const linkedItem = p.linkedItemId ? items[p.linkedItemId] : null;
+              const isRequiredShot = p.linkedItemId?.startsWith('required-shot-');
+              const linkedItem = p.linkedItemId && !isRequiredShot ? items[p.linkedItemId] : null;
+              
+              let displayText = 'Unlinked';
+              if (isRequiredShot && p.caption) {
+                displayText = `📸 ${p.caption.split('—')[0]}`;
+              } else if (linkedItem) {
+                displayText = linkedItem.text.split('—')[0];
+              }
+
               return (
                 <div key={p.id} className="relative group w-28 flex-shrink-0 flex flex-col items-center">
                   <div className="w-28 h-28 rounded-lg overflow-hidden border-4 border-brand-navy bg-gray-50 shadow-md relative">
@@ -153,18 +197,16 @@ export function PhotoTracker({ photos, items, facilityName, unitNumber, building
                       <X size={16} strokeWidth={3} />
                     </button>
                   </div>
-                  {linkedItem && (
-                    <div className="mt-2 text-center w-full">
-                      <p className="text-[10px] font-bold text-brand-navy-dark line-clamp-2 uppercase leading-tight">
-                        {linkedItem.text.split('—')[0]}
+                  <div className="mt-2 text-center w-full">
+                    <p className={`text-[10px] font-bold line-clamp-2 uppercase leading-tight ${isRequiredShot ? 'text-brand-green line-clamp-3' : 'text-brand-navy-dark'}`}>
+                      {displayText}
+                    </p>
+                    {p.unitNumber && (
+                      <p className="text-[9px] font-black text-gray-500 uppercase mt-0.5">
+                        Unit {p.unitNumber}
                       </p>
-                      {p.unitNumber && (
-                        <p className="text-[9px] font-black text-gray-500 uppercase mt-0.5">
-                          Unit {p.unitNumber}
-                        </p>
-                      )}
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -212,7 +254,22 @@ export function PhotoTracker({ photos, items, facilityName, unitNumber, building
 
               <div className="space-y-4 pb-4">
                 <div className="space-y-2">
-                  <h4 className="text-xs font-display font-black text-brand-red uppercase tracking-widest border-b-2 border-red-100 pb-1">Red Light / Life Safety</h4>
+                  <h4 className="text-xs font-display font-black text-brand-navy uppercase tracking-widest border-b-2 border-blue-100 pb-1 flex items-center gap-1">
+                    <Camera size={14} /> Required Shots
+                  </h4>
+                  {requiredShots.map(shot => {
+                    const slugId = `required-shot-${slugify(shot)}`;
+                    return (
+                      <label key={slugId} className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${selectedItemId === slugId ? 'border-brand-navy bg-blue-50 text-brand-navy font-bold shadow-sm' : 'border-gray-200 hover:border-blue-300'}`}>
+                        <input type="radio" name="linkedItem" value={slugId} checked={selectedItemId === slugId} onChange={(e) => setSelectedItemId(e.target.value)} className="hidden" />
+                        <span className="text-sm line-clamp-2">{shot}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className="text-xs font-display font-black text-brand-red uppercase tracking-widest border-b-2 border-red-100 pb-1 mt-6">Red Light / Life Safety</h4>
                   {redItems.map(item => (
                     <label key={item.id} className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${selectedItemId === item.id ? 'border-brand-red bg-red-50 text-brand-red font-bold' : 'border-gray-200 hover:border-red-300'}`}>
                       <input type="radio" name="linkedItem" value={item.id} checked={selectedItemId === item.id} onChange={(e) => setSelectedItemId(e.target.value)} className="hidden" />
@@ -240,6 +297,18 @@ export function PhotoTracker({ photos, items, facilityName, unitNumber, building
                     </label>
                   ))}
                 </div>
+
+                {slateItems.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-display font-black text-gray-800 uppercase tracking-widest border-b-2 border-gray-200 pb-1">🔑 Access Credentials</h4>
+                    {slateItems.map(item => (
+                      <label key={item.id} className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${selectedItemId === item.id ? 'border-gray-800 bg-gray-100 text-gray-900 font-bold' : 'border-gray-200 hover:border-gray-400'}`}>
+                        <input type="radio" name="linkedItem" value={item.id} checked={selectedItemId === item.id} onChange={(e) => setSelectedItemId(e.target.value)} className="hidden" />
+                        <span className="text-sm line-clamp-2">{item.text}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -266,29 +335,63 @@ export function PhotoTracker({ photos, items, facilityName, unitNumber, building
     {photos.length > 0 && (
       <div className="print-only page-break mt-8">
         <h3 className="text-xl font-bold bg-brand-navy text-white p-2 mb-4 font-display">PHOTOGRAPHIC EVIDENCE</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {photos.map(p => {
-            const linkedItem = p.linkedItemId ? items[p.linkedItemId] : null;
-            // Best effort timestamp detection. Ideally stored with photo, but watermark happens at creation.
-            // We'll just show the linked text and unit info.
-            return (
-              <div key={p.id} className="border-2 border-gray-300 p-4 rounded-lg page-break-inside-avoid">
-                <div className="w-full h-48 bg-gray-100 flex items-center justify-center mb-4 overflow-hidden border border-gray-200">
-                  <img src={p.dataUri} className="max-w-full max-h-full object-contain" alt="Evidence" />
-                </div>
-                <div className="text-sm text-gray-800 font-medium space-y-1">
-                  <p><strong>Item:</strong> {linkedItem ? linkedItem.text.split('—')[0] : 'Unlinked'}</p>
-                  <p><strong>Location:</strong> {p.facilityName || facilityName} - Unit {p.unitNumber || unitNumber}</p>
-                </div>
-                <div className="mt-3">
-                  <a href={p.dataUri} target="_blank" rel="noreferrer" className="text-brand-navy font-bold text-sm underline pb-1">
-                    View Full Size
-                  </a>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        
+        {(() => {
+          const reqPhotos = photos.filter(p => p.linkedItemId?.startsWith('required-shot-'));
+          const otherPhotos = photos.filter(p => !p.linkedItemId?.startsWith('required-shot-'));
+
+          const renderList = (list: typeof photos) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+              {list.map(p => {
+                const isRequiredShot = p.linkedItemId?.startsWith('required-shot-');
+                const linkedItem = p.linkedItemId && !isRequiredShot ? items[p.linkedItemId] : null;
+                
+                let displayText = 'Unlinked';
+                if (isRequiredShot && p.caption) {
+                  displayText = `📸 ${p.caption.split('—')[0]}`;
+                } else if (linkedItem) {
+                  displayText = linkedItem.text.split('—')[0];
+                }
+
+                return (
+                  <div key={p.id} className="border-2 border-gray-300 p-4 rounded-lg page-break-inside-avoid">
+                    <div className="w-full h-48 bg-gray-100 flex items-center justify-center mb-4 overflow-hidden border border-gray-200">
+                      <img src={p.dataUri} className="max-w-full max-h-full object-contain" alt="Evidence" />
+                    </div>
+                    <div className="text-sm text-gray-800 font-medium space-y-1">
+                      <p><strong>Item:</strong> {displayText}</p>
+                      <p><strong>Location:</strong> {p.facilityName || facilityName} - Unit {p.unitNumber || unitNumber}</p>
+                    </div>
+                    <div className="mt-3">
+                      <a href={p.dataUri} target="_blank" rel="noreferrer" className="text-brand-navy font-bold text-sm underline pb-1">
+                        View Full Size
+                      </a>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+
+          return (
+            <>
+              {reqPhotos.length > 0 && (
+                <>
+                  <h4 className="text-lg font-bold text-brand-navy mb-3 border-b-2 border-gray-200 pb-1 flex items-center gap-2">
+                    <Camera size={20} /> Required Shots
+                  </h4>
+                  {renderList(reqPhotos)}
+                </>
+              )}
+              {otherPhotos.length > 0 && (
+                <>
+                  <h4 className="text-lg font-bold text-brand-navy mb-3 border-b-2 border-gray-200 pb-1">Assessment Items</h4>
+                  {renderList(otherPhotos)}
+                </>
+              )}
+            </>
+          );
+        })()}
       </div>
     )}
     </>

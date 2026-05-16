@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { InspectionData } from '../types';
+import { AssessmentData } from '../types';
 import { X, Printer, Copy, PenTool } from 'lucide-react';
-import { noticeOfEntryTemplate, noticeOfClaimTemplate, generateFormalReportHTML, processTemplate } from '../templates/notices';
+import { noticeOfEntryTemplate, noticeOfClaimTemplate, generateFormalReportHTML, generateHabitationReportHTML, processTemplate } from '../templates/notices';
 import { SignatureCapture } from './SignatureCapture';
 
-type DocType = 'Entry' | 'Claim' | 'Formal';
+type DocType = 'Entry' | 'Claim' | 'Formal' | 'Habitation';
 
 interface DocumentGeneratorProps {
-  data: InspectionData;
+  data: AssessmentData;
   initialType?: DocType;
   onClose: () => void;
   onSaveSignature?: (base64: string, timestamp: string) => void;
@@ -20,7 +20,7 @@ export function DocumentGenerator({ data, initialType = 'Formal', onClose, onSav
   // Custom fields
   const [tenantName, setTenantName] = useState('');
   const [leaseStartDate, setLeaseStartDate] = useState('');
-  const [reasonForEntry, setReasonForEntry] = useState('Routine Health & Safety Inspection');
+  const [reasonForEntry, setReasonForEntry] = useState('Routine Health & Safety Assessment');
   
   const [amountDue, setAmountDue] = useState('');
   
@@ -62,7 +62,7 @@ export function DocumentGenerator({ data, initialType = 'Formal', onClose, onSav
       facilityName: data.facilityName || '[Facility Name]',
       unitNumber: data.unitNumber || '[Unit]',
       inspectorName: data.inspectorName || '[Inspector Name]',
-      inspectionDate: now.toLocaleDateString(),
+      assessmentDate: now.toLocaleDateString(),
       generationTime: now.toLocaleString(),
       
       tenantName: tenantName || '[Tenant Name]',
@@ -83,6 +83,8 @@ export function DocumentGenerator({ data, initialType = 'Formal', onClose, onSav
       result = processTemplate(noticeOfEntryTemplate, templateData);
     } else if (docType === 'Claim') {
       result = processTemplate(noticeOfClaimTemplate, templateData);
+    } else if (docType === 'Habitation') {
+      result = generateHabitationReportHTML(data);
     } else {
       result = generateFormalReportHTML(data);
     }
@@ -123,7 +125,7 @@ export function DocumentGenerator({ data, initialType = 'Formal', onClose, onSav
           <div>
             <label className="block text-xs font-display font-black text-gray-500 uppercase tracking-widest mb-2">Document Type</label>
             <div className="space-y-2">
-              {(['Formal', 'Entry', 'Claim'] as DocType[]).map((type) => (
+              {(['Formal', 'Entry', 'Claim', 'Habitation'] as DocType[]).map((type) => (
                 <button
                   key={type}
                   onClick={() => setDocType(type)}
@@ -131,10 +133,11 @@ export function DocumentGenerator({ data, initialType = 'Formal', onClose, onSav
                     docType === type 
                       ? 'border-brand-navy bg-brand-navy/5 text-brand-navy' 
                       : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                  }`}
+                  } ${type === 'Habitation' && docType !== 'Habitation' ? 'hidden' : ''}`}
                 >
-                  {type === 'Formal' ? 'Formal Inspection Report' : 
+                  {type === 'Formal' ? 'Formal Assessment Report' : 
                    type === 'Entry' ? 'Notice of Entry' : 
+                   type === 'Habitation' ? 'Habitation Violation Report' :
                    'Notice of Claim (Lien)'}
                 </button>
               ))}
@@ -159,7 +162,7 @@ export function DocumentGenerator({ data, initialType = 'Formal', onClose, onSav
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">Reason for Entry</label>
                 <select value={reasonForEntry} onChange={e => setReasonForEntry(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-brand-navy/20 focus:border-brand-navy outline-none">
-                  <option>Routine Health & Safety Inspection</option>
+                  <option>Routine Health & Safety Assessment</option>
                   <option>Pest Control</option>
                   <option>Maintenance</option>
                   <option>Other</option>
@@ -200,7 +203,7 @@ export function DocumentGenerator({ data, initialType = 'Formal', onClose, onSav
           
           {docType === 'Formal' && (
             <div className="p-3 bg-gray-50 border border-gray-200 rounded text-sm text-gray-600">
-              This document auto-populates from your inspection data and forensics summary.
+              This document auto-populates from your assessment data and forensics summary.
             </div>
           )}
         </div>

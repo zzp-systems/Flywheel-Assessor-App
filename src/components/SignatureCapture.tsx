@@ -1,5 +1,6 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { X, Eraser, Upload, Type, PenTool } from 'lucide-react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { X, Eraser, Upload, Type, PenTool, Crop } from 'lucide-react';
+import Cropper from 'react-easy-crop';
 
 interface SignatureCaptureProps {
   onSave: (base64String: string, timestamp: string) => void;
@@ -22,8 +23,11 @@ export function SignatureCapture({ onSave, onCancel, initialName = '' }: Signatu
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasDrawn, setHasDrawn] = useState(false);
 
-  // Upload state
+  // Upload & Crop state
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
 
   useEffect(() => {
     if (activeTab === 'Draw') {
@@ -72,10 +76,12 @@ export function SignatureCapture({ onSave, onCancel, initialName = '' }: Signatu
       clearCanvasArea(canvas, ctx);
     }
 
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 4;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.strokeStyle = '#0F1C2E';
+    ctx.shadowColor = '#0F1C2E';
+    ctx.shadowBlur = 1;
   };
 
   const getCoordinates = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
@@ -143,6 +149,9 @@ export function SignatureCapture({ onSave, onCancel, initialName = '' }: Signatu
       const reader = new FileReader();
       reader.onload = (event) => {
         setUploadedImage(event.target?.result as string);
+        setActiveTab('Upload');
+        setCrop({ x: 0, y: 0 });
+        setZoom(1);
       };
       reader.readAsDataURL(file);
     }
@@ -152,7 +161,38 @@ export function SignatureCapture({ onSave, onCancel, initialName = '' }: Signatu
     setUploadedImage(null);
   };
 
-  const handleSave = () => {
+  const onCropComplete = useCallback((croppedArea: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const getCroppedImg = async (imageSrc: string, pixelCrop: any): Promise<string> => {
+    const image = new Image();
+    image.src = imageSrc;
+    await new Promise((resolve) => (image.onload = resolve));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = pixelCrop.width;
+    canvas.height = pixelCrop.height;
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) return '';
+
+    ctx.drawImage(
+      image,
+      pixelCrop.x,
+      pixelCrop.y,
+      pixelCrop.width,
+      pixelCrop.height,
+      0,
+      0,
+      pixelCrop.width,
+      pixelCrop.height
+    );
+
+    return canvas.toDataURL('image/png');
+  };
+
+  const handleSave = async () => {
     let dataUrl = '';
     if (activeTab === 'Draw') {
       if (!hasDrawn) {
@@ -171,7 +211,11 @@ export function SignatureCapture({ onSave, onCancel, initialName = '' }: Signatu
         alert("Please upload an image before saving.");
         return;
       }
-      dataUrl = uploadedImage;
+      try {
+        dataUrl = await getCroppedImg(uploadedImage, croppedAreaPixels);
+      } catch (e) {
+        dataUrl = uploadedImage; // fallback
+      }
     }
     
     onSave(dataUrl, new Date().toISOString());
@@ -279,13 +323,36 @@ export function SignatureCapture({ onSave, onCancel, initialName = '' }: Signatu
           )}
 
           {activeTab === 'Upload' && (
-            <div className="flex-1 flex flex-col justify-center">
+            <div className="flex-1 flex flex-col justify-center relative touch-none">
               {uploadedImage ? (
-                <div className="relative bg-white border border-gray-300 rounded-lg p-4 flex items-center justify-center mb-4 min-h-[150px]">
-                  <img src={uploadedImage} alt="Uploaded signature" className="max-h-32 object-contain" />
-                  <button onClick={clearUpload} className="absolute top-2 right-2 p-1 bg-red-100 text-red-600 rounded-full hover:bg-red-200">
-                    <X size={14} />
-                  </button>
+                <div className="flex flex-col flex-1 pb-4">
+                  <div className="relative bg-black rounded-lg overflow-hidden flex-1 min-h-[200px]">
+                    <Cropper
+                      image={uploadedImage}
+                      crop={crop}
+                      zoom={zoom}
+                      aspect={400 / 150}
+                      onCropChange={setCrop}
+                      onZoomChange={setZoom}
+                      onCropComplete={onCropComplete}
+                    />
+                  </div>
+                  <div className="mt-4 px-4 py-2 bg-white flex items-center justify-between gap-4 border border-gray-300 rounded-lg shadow-sm">
+                    <span className="text-sm font-bold text-gray-500">Zoom</span>
+                    <input
+                      type="range"
+                      value={zoom}
+                      min={1}
+                      max={3}
+                      step={0.1}
+                      aria-labelledby="Zoom"
+                      onChange={(e) => setZoom(Number(e.target.value))}
+                      className="w-full max-w-[200px] accent-brand-navy"
+                    />
+                    <button onClick={clearUpload} className="p-2 bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors" title="Remove image">
+                      <X size={16} />
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <label className="bg-white border-2 border-dashed border-gray-300 rounded-lg flex-1 flex flex-col items-center justify-center p-6 cursor-pointer hover:bg-gray-50 transition-colors">

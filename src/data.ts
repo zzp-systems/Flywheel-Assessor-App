@@ -1,4 +1,4 @@
-import { ChecklistItem, InspectionType } from './types';
+import { ChecklistItem, AssessmentType } from './types';
 
 export const RED_LIGHT_ITEMS: Omit<ChecklistItem, 'status' | 'note'>[] = [
   { id: 'red-1', tier: 'Red', text: 'Fire sprinkler system — visual check, no leaks, no corrosion (Texas Property Code §59, NFPA 13)' },
@@ -10,11 +10,11 @@ export const RED_LIGHT_ITEMS: Omit<ChecklistItem, 'status' | 'note'>[] = [
   { id: 'red-7', tier: 'Red', text: 'Electrical panel — secure cover, no exposed wiring, no scorch marks' },
   { id: 'red-8', tier: 'Red', text: 'Gate access system — operational, emergency release functional' },
   { id: 'red-9', tier: 'Red', text: 'Security camera coverage — all hallways and entry points visible' },
-  { id: 'red-10', tier: 'Red', text: 'Fire extinguisher — present, charged, within inspection date' }
+  { id: 'red-10', tier: 'Red', text: 'Fire extinguisher — present, charged, within assessment date' }
 ];
 
-export const YELLOW_LIGHT_ITEMS: Record<InspectionType, Omit<ChecklistItem, 'status' | 'note'>[]> = {
-  'Move-In Baseline': [
+export const YELLOW_LIGHT_ITEMS: Record<AssessmentType, Omit<ChecklistItem, 'status' | 'note'>[]> = {
+  'Move-In Assessment Report': [
     { id: 'y-movein-1', tier: 'Yellow', text: 'HVAC / climate control — operational, maintaining 65-80°F' },
     { id: 'y-movein-2', tier: 'Yellow', text: 'Humidity levels — within 30-60% RH' },
     { id: 'y-movein-3', tier: 'Yellow', text: 'Plumbing / sump pump — no leaks, operational' },
@@ -25,7 +25,7 @@ export const YELLOW_LIGHT_ITEMS: Record<InspectionType, Omit<ChecklistItem, 'sta
     { id: 'y-movein-8', tier: 'Yellow', text: 'Overhead door spring tension — no gaps, no squealing' },
     { id: 'y-movein-9', tier: 'Yellow', text: 'Unit interior surfaces — free of damage/stains' }
   ],
-  'Mid-Tenancy': [
+  'Unit Health & Safety Assessment': [
     { id: 'y-mid-1', tier: 'Yellow', text: 'HVAC / climate control — operational, no noise' },
     { id: 'y-mid-2', tier: 'Yellow', text: 'Pest activity — no new signs' },
     { id: 'y-mid-3', tier: 'Yellow', text: 'Water intrusion — no new leaks/stains' },
@@ -35,7 +35,7 @@ export const YELLOW_LIGHT_ITEMS: Record<InspectionType, Omit<ChecklistItem, 'sta
     { id: 'y-mid-7', tier: 'Yellow', text: 'Lock check — tenant lock present and secure' },
     { id: 'y-mid-8', tier: 'Yellow', text: 'Unit access — no obstructions' }
   ],
-  'Move-Out': [
+  'Move-Out Assessment Report': [
     { id: 'y-moveout-1', tier: 'Yellow', text: 'HVAC / climate control — still operational? Note new damage', baselineId: 'y-movein-1' },
     { id: 'y-moveout-2', tier: 'Yellow', text: 'Plumbing / sump pump — new leaks or damage', baselineId: 'y-movein-3' },
     { id: 'y-moveout-3', tier: 'Yellow', text: 'Lighting — broken fixtures/missing bulbs', baselineId: 'y-movein-4' },
@@ -47,8 +47,28 @@ export const YELLOW_LIGHT_ITEMS: Record<InspectionType, Omit<ChecklistItem, 'sta
   ]
 };
 
-export const GREEN_LIGHT_ITEMS: Record<InspectionType, Omit<ChecklistItem, 'status' | 'note'>[]> = {
-  'Move-In Baseline': [
+export const SLATE_LIGHT_ITEMS: Record<AssessmentType, Omit<ChecklistItem, 'status' | 'note'>[]> = {
+  'Move-In Assessment Report': [
+    { id: 's-movein-1', tier: 'Slate', text: 'Gate access code assigned' },
+    { id: 's-movein-2', tier: 'Slate', text: 'Key fob / proximity card issued' },
+    { id: 's-movein-3', tier: 'Slate', text: 'Remote control issued' },
+    { id: 's-movein-4', tier: 'Slate', text: 'Tenant lock verified' },
+    { id: 's-movein-5', tier: 'Slate', text: 'Number of keys provided to tenant' },
+    { id: 's-movein-6', tier: 'Slate', text: 'Access instructions reviewed' }
+  ],
+  'Unit Health & Safety Assessment': [],
+  'Move-Out Assessment Report': [
+    { id: 's-moveout-1', tier: 'Slate', text: 'Gate access code deactivated', baselineId: 's-movein-1' },
+    { id: 's-moveout-2', tier: 'Slate', text: 'Key fob / proximity card returned', baselineId: 's-movein-2' },
+    { id: 's-moveout-3', tier: 'Slate', text: 'Remote control returned', baselineId: 's-movein-3' },
+    { id: 's-moveout-4', tier: 'Slate', text: 'Tenant lock removed', baselineId: 's-movein-4' },
+    { id: 's-moveout-5', tier: 'Slate', text: 'All keys returned', baselineId: 's-movein-5' },
+    { id: 's-moveout-6', tier: 'Slate', text: 'Access credentials audit complete', baselineId: 's-movein-6' }
+  ]
+};
+
+export const GREEN_LIGHT_ITEMS: Record<AssessmentType, Omit<ChecklistItem, 'status' | 'note'>[]> = {
+  'Move-In Assessment Report': [
     { id: 'g-movein-1', tier: 'Green', text: 'Unit cleanliness — swept, debris-free' },
     { id: 'g-movein-2', tier: 'Green', text: 'Hallway cleanliness — clear, no trip hazards' },
     { id: 'g-movein-3', tier: 'Green', text: 'Signage — legible, directional present' },
@@ -57,11 +77,11 @@ export const GREEN_LIGHT_ITEMS: Record<InspectionType, Omit<ChecklistItem, 'stat
     { id: 'g-movein-6', tier: 'Green', text: 'Trash / dumpster area — not overflowing' },
     { id: 'g-movein-7', tier: 'Green', text: 'Landscaping — no overgrowth' }
   ],
-  'Mid-Tenancy': [
+  'Unit Health & Safety Assessment': [
     { id: 'g-mid-1', tier: 'Green', text: 'Hallway cleanliness — no tenant-created hazards' },
     { id: 'g-mid-2', tier: 'Green', text: 'Trash / dumpster area — no overflow from tenant' }
   ],
-  'Move-Out': [
+  'Move-Out Assessment Report': [
     { id: 'g-moveout-1', tier: 'Green', text: 'Unit cleanliness — swept, no odors left', baselineId: 'g-movein-1' },
     { id: 'g-moveout-2', tier: 'Green', text: 'Hallway cleanliness — clear', baselineId: 'g-movein-2' },
     { id: 'g-moveout-3', tier: 'Green', text: 'Signage — still legible', baselineId: 'g-movein-3' },

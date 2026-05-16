@@ -1,11 +1,12 @@
 import React from 'react';
-import { InspectionData } from '../types';
+import { AssessmentData } from '../types';
 
-export function DetailedChecklistPrint({ data }: { data: InspectionData }) {
+export function DetailedChecklistPrint({ data }: { data: AssessmentData }) {
   const tiers = [
     { id: 'Red', name: 'RED LIGHT TIER (CRITICAL)', color: '#DC2626', bg: '#fef2f2' },
     { id: 'Yellow', name: 'YELLOW LIGHT TIER (MODERATE)', color: '#F59E0B', bg: '#fffbeb' },
-    { id: 'Green', name: 'GREEN LIGHT TIER (MINOR/COSMETIC)', color: '#059669', bg: '#ecfdf5' }
+    { id: 'Green', name: 'GREEN LIGHT TIER (MINOR/COSMETIC)', color: '#059669', bg: '#ecfdf5' },
+    { id: 'Slate', name: 'ACCESS CREDENTIALS & ISSUED ITEMS', color: '#1F2937', bg: '#f3f4f6' }
   ];
 
   return (
