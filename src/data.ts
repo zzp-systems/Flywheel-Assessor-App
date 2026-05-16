@@ -1,5 +1,28 @@
 import { ChecklistItem, AssessmentType } from './types';
 
+export const slugify = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+export const REQUIRED_SHOTS = [
+  'Exterior front of facility (with signage)',
+  'Unit exterior door (with unit number visible)',
+  'Wide shot of unit interior (all corners if large)',
+  'Thermostat / HVAC control reading (if climate‑controlled)',
+  'Electrical panel interior',
+  'Under sinks / near plumbing (if applicable)',
+  'Gate access control panel',
+  'Roll‑up door track & weather seal',
+  'Overhead door spring assembly',
+  'Fire extinguisher tag / date',
+  'Any damage, safety issues, or pest evidence',
+  'Hallway condition (both directions from unit)',
+  'Trash area / dumpster',
+  'General security camera overview',
+  'Additional context shot'
+].map(text => ({
+  id: `required-shot-${slugify(text)}`,
+  text
+}));
+
 export const RED_LIGHT_ITEMS: Omit<ChecklistItem, 'status' | 'note'>[] = [
   { id: 'red-1', tier: 'Red', text: 'Fire sprinkler system — visual check, no leaks, no corrosion (Texas Property Code §59, NFPA 13)' },
   { id: 'red-2', tier: 'Red', text: 'Dry‑pipe valve room heater — operational, no condensate freezing risk' },

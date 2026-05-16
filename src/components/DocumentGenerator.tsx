@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AssessmentData } from '../types';
-import { X, Printer, Copy, PenTool } from 'lucide-react';
+import { X, Printer, Copy, PenTool, Download } from 'lucide-react';
 import { noticeOfEntryTemplate, noticeOfClaimTemplate, generateFormalReportHTML, generateHabitationReportHTML, processTemplate } from '../templates/notices';
 import { SignatureCapture } from './SignatureCapture';
+// @ts-ignore - html2pdf.js might not have types
+import html2pdf from 'html2pdf.js';
 
 type DocType = 'Entry' | 'Claim' | 'Formal' | 'Habitation';
 
@@ -11,11 +13,14 @@ interface DocumentGeneratorProps {
   initialType?: DocType;
   onClose: () => void;
   onSaveSignature?: (base64: string, timestamp: string) => void;
+  autoDownloadRef?: React.MutableRefObject<boolean>;
 }
 
-export function DocumentGenerator({ data, initialType = 'Formal', onClose, onSaveSignature }: DocumentGeneratorProps) {
+export function DocumentGenerator({ data, initialType = 'Formal', onClose, onSaveSignature, autoDownloadRef }: DocumentGeneratorProps) {
   const [docType, setDocType] = useState<DocType>(initialType);
   const [signOpen, setSignOpen] = useState(false);
+  const previewRef = useRef<HTMLDivElement>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
   
   // Custom fields
   const [tenantName, setTenantName] = useState('');
@@ -40,6 +45,16 @@ export function DocumentGenerator({ data, initialType = 'Formal', onClose, onSav
 
   useEffect(() => {
     generateDoc();
+    
+    // Handle Auto Download if requested
+    if (autoDownloadRef?.current) {
+      // Delay slightly to ensure HTML is rendered
+      const timer = setTimeout(() => {
+        handleDownloadPDF();
+        autoDownloadRef.current = false;
+      }, 800);
+      return () => clearTimeout(timer);
+    }
   }, [docType, tenantName, leaseStartDate, reasonForEntry, amountDue, dateOfEntry, timeWindow, data]);
 
   const generateDoc = () => {
@@ -61,7 +76,7 @@ export function DocumentGenerator({ data, initialType = 'Formal', onClose, onSav
     const templateData: Record<string, string> = {
       facilityName: data.facilityName || '[Facility Name]',
       unitNumber: data.unitNumber || '[Unit]',
-      inspectorName: data.inspectorName || '[Inspector Name]',
+      assessorName: data.assessorName || '[Assessor Name]',
       assessmentDate: now.toLocaleDateString(),
       generationTime: now.toLocaleString(),
       
@@ -74,7 +89,7 @@ export function DocumentGenerator({ data, initialType = 'Formal', onClose, onSav
       amountDue: amountDue || '[Amount]',
       deadlineDate: deadline.toLocaleDateString(),
 
-      signatureImage: data.inspectorSignature || '',
+      signatureImage: data.assessorSignature || '',
       signatureTimestamp: data.signatureTimestamp ? `Signed: ${new Date(data.signatureTimestamp).toLocaleString()}` : '',
     };
 
@@ -98,6 +113,30 @@ export function DocumentGenerator({ data, initialType = 'Formal', onClose, onSav
       setTimeout(() => setPrintWarning(false), 8000);
     }
     window.print();
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!previewRef.current) return;
+    setIsGenerating(true);
+
+    const filename = `${docType}_Report_${data.unitNumber || 'Unit'}_${new Date().toISOString().split('T')[0]}.pdf`;
+    
+    const opt = {
+      margin: 0.75,
+      filename: filename,
+      image: { type: 'jpeg' as const, quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, logging: false },
+      jsPDF: { unit: 'in', format: 'legal', orientation: 'portrait' as const }
+    };
+
+    try {
+      await html2pdf().set(opt).from(previewRef.current).save();
+    } catch (error) {
+      console.error("PDF Generation Error:", error);
+      alert("Failed to generate PDF. Try printing to PDF instead.");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const copyToClipboard = () => {
@@ -228,6 +267,13 @@ export function DocumentGenerator({ data, initialType = 'Formal', onClose, onSav
             <Copy size={16} /> Copy Text
           </button>
           <button 
+            onClick={handleDownloadPDF}
+            disabled={isGenerating}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 border-2 border-brand-navy text-brand-navy font-bold rounded hover:bg-brand-navy/5 transition-colors disabled:opacity-50"
+          >
+            <Download size={18} /> {isGenerating ? 'Generating...' : 'Download PDF'}
+          </button>
+          <button 
             onClick={handlePrint}
             className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-brand-navy text-white font-bold rounded shadow hover:bg-brand-navy-light transition-colors"
           >
@@ -239,6 +285,7 @@ export function DocumentGenerator({ data, initialType = 'Formal', onClose, onSav
       {/* Right Panel: Preview */}
       <div className="flex-1 overflow-y-auto p-4 md:p-8 flex justify-center print:p-0 print:block print:overflow-visible print:h-auto">
         <div 
+          ref={previewRef}
           className="print:w-full print:max-w-none print:shadow-none"
           style={{ width: '100%', maxWidth: '8.5in' }}
           dangerouslySetInnerHTML={{ __html: htmlContent }} 
@@ -247,7 +294,7 @@ export function DocumentGenerator({ data, initialType = 'Formal', onClose, onSav
 
       {signOpen && (
         <SignatureCapture 
-          initialName={data.inspectorName}
+          initialName={data.assessorName}
           onCancel={() => setSignOpen(false)}
           onSave={(b64, ts) => {
             onSaveSignature?.(b64, ts);

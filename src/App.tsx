@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAssessment } from './hooks';
 import { ChecklistView } from './components/ChecklistView';
 import { PhotoTracker } from './components/PhotoTracker';
@@ -9,12 +9,42 @@ import { DocumentGenerator } from './components/DocumentGenerator';
 import { DetailedChecklistPrint } from './components/DetailedChecklistPrint';
 import { SignatureCapture } from './components/SignatureCapture';
 import { Printer, WifiOff, RefreshCcw, FileText, PenTool, ClipboardCheck, X, Mail } from 'lucide-react';
-import { AssessmentType } from './types';
+import { AssessmentType, ChecklistItem } from './types';
 
 export default function App() {
-  const { data, isLoaded, isOnline, isSyncing, pendingSyncCount, updateField, changeType, updateItemStatus, updateItemNote, addPhoto, removePhoto, toggleFollowUp, importBaseline, updateDeltaCost, pendingMappings, cancelMapping, confirmMapping, addWorkOrder, queueAssessment } = useAssessment();
+  const { data, isLoaded, isOnline, isSyncing, pendingSyncCount, updateField, changeType, updateItemStatus, updateItemNote, addPhoto, removePhoto, toggleFollowUp, updateFollowUpPriority, importBaseline, updateDeltaCost, updateDeltaBaselineOverride, pendingMappings, cancelMapping, confirmMapping, addWorkOrder, queueAssessment } = useAssessment();
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showFloatingBubble, setShowFloatingBubble] = useState(false);
   const [docGenOpen, setDocGenOpen] = useState(false);
+  const autoDownloadRef = React.useRef(false);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    
+    // Tiny delay to ensure DOM is updated.
+    const timeout = setTimeout(() => {
+      const el = document.getElementById('forensic-summary');
+      if (!el) return;
+
+      const observer = new IntersectionObserver((entries) => {
+        const [entry] = entries;
+        if (!entry.isIntersecting && entry.boundingClientRect.top < 0) {
+          setShowFloatingBubble(true);
+        } else {
+          setShowFloatingBubble(false);
+        }
+      }, { threshold: 0.1 });
+
+      observer.observe(el);
+
+      return () => {
+        observer.unobserve(el);
+      };
+    }, 100);
+
+    return () => clearTimeout(timeout);
+  }, [isLoaded]);
   const [docGenType, setDocGenType] = useState<'Entry' | 'Claim' | 'Formal' | 'Habitation'>('Formal');
   const [signOpen, setSignOpen] = useState(false);
   const [tenantSignOpen, setTenantSignOpen] = useState(false);
@@ -23,6 +53,12 @@ export default function App() {
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [attemptedComplete, setAttemptedComplete] = useState(false);
   const [isAssessmentCompleted, setIsAssessmentCompleted] = useState(false);
+
+  useEffect(() => {
+    if (isAssessmentCompleted) {
+      setIsAssessmentCompleted(false);
+    }
+  }, [data]);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [scraModalOpen, setScraModalOpen] = useState(false);
   
@@ -54,7 +90,7 @@ export default function App() {
     if (!data.facilityName) errors.push('Facility Name is required.');
     if (!data.unitNumber) errors.push('Unit Number is required.');
     if (!data.building) errors.push('Building/Floor is required.');
-    if (!data.inspectorName) errors.push('Inspector Name is required.');
+    if (!data.assessorName) errors.push('Assessor Name is required.');
     if (!data.weather) errors.push('Weather conditions are required.');
 
     // Red light items validation
@@ -68,11 +104,26 @@ export default function App() {
     if (data.type === 'Move-In Assessment Report' || data.type === 'Move-Out Assessment Report') {
       const coveredRequiredShots = new Set(
         data.photos
-          .filter(p => p.linkedItemId?.startsWith('required-shot-'))
-          .map(p => p.linkedItemId)
+          .flatMap(p => p.linkedItemIds || (p.linkedItemId ? [p.linkedItemId] : []))
+          .filter(id => id.startsWith('required-shot-'))
       );
       if (coveredRequiredShots.size < 15) {
         errors.push(`All 15 Required Shots must be captured – currently have ${coveredRequiredShots.size}/15`);
+      }
+    }
+
+    // Move-In Mandatory Baseline
+    if (data.type === 'Move-In Assessment Report') {
+      const itemsList = Object.values(data.items) as ChecklistItem[];
+      const missingPhotos: string[] = [];
+      itemsList.forEach(item => {
+        const hasPhoto = data.photos.some(p => (p.linkedItemIds || []).includes(item.id) || p.linkedItemId === item.id);
+        if (!hasPhoto) {
+          missingPhotos.push(item.text.split('—')[0].trim());
+        }
+      });
+      if (missingPhotos.length > 0) {
+        errors.push(`Missing photo baseline (MANDATORY for Move-In) for: ${missingPhotos.join(', ')}`);
       }
     }
 
@@ -94,12 +145,12 @@ export default function App() {
     }
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     const handleHabitationEvent = () => {
       openDocumentGenerator('Habitation');
     };
-    window.addEventListener('open- habitation-report', handleHabitationEvent);
-    return () => window.removeEventListener('open- habitation-report', handleHabitationEvent);
+    window.addEventListener('open-habitation-report', handleHabitationEvent);
+    return () => window.removeEventListener('open-habitation-report', handleHabitationEvent);
   }, []);
 
   const openDocumentGenerator = (type: 'Entry' | 'Claim' | 'Formal' | 'Habitation') => {
@@ -164,7 +215,7 @@ export default function App() {
 
       {/* Print Footer Header (Only visible when printing) */}
       <div className="print-only fixed bottom-0 left-0 w-full text-center text-[10px] text-gray-500 pb-2 border-t pt-2 bg-white">
-        Flywheel Investors — Texas Property Code Chapter 59 — Assessment Report — {data.facilityName || 'Facility'} — {formattedDate}
+        Flywheel Investors — Texas Property Code Chapter 59 — {data.type || 'Assessment Report'} — {data.facilityName || 'Facility'} — {formattedDate}
       </div>
 
       {/* Main Header */}
@@ -184,7 +235,7 @@ export default function App() {
       <main className="max-w-4xl mx-auto p-4 md:p-6 space-y-8">
         {/* Dedicated Print Title */}
         <div className="print-only text-center mt-4 border-b-2 border-black pb-4 mb-8">
-          <h2 className="text-3xl font-display font-black uppercase tracking-widest text-black">Self-Storage Assessment Report</h2>
+          <h2 className="text-3xl font-display font-black uppercase tracking-widest text-black">{data.type || 'Self-Storage Assessment Report'}</h2>
         </div>
         
         {/* Assessment Details Card */}
@@ -246,10 +297,10 @@ export default function App() {
             </div>
             
             <div>
-              <label className={`block text-xs font-display font-bold tracking-wider uppercase mb-2 ${attemptedComplete && !data.inspectorName ? 'text-red-500' : 'text-gray-500 print:text-gray-800'}`}>Inspector</label>
-              <input type="text" value={data.inspectorName} onChange={e => updateField('inspectorName', e.target.value)} className={`w-full bg-gray-50 border-2 rounded-md focus:border-brand-navy focus:bg-white focus:ring-2 focus:ring-brand-navy/10 px-3 py-2 text-sm font-bold text-gray-900 transition-all outline-none no-print ${attemptedComplete && !data.inspectorName ? 'border-red-500 focus:ring-red-100' : 'border-gray-200'}`} placeholder="Full Name" />
-              {attemptedComplete && !data.inspectorName && <span className="text-red-500 text-xs font-bold mt-1 block">Required</span>}
-              <div className="print-only font-bold text-black border-b border-gray-300 pb-1">{data.inspectorName || 'N/A'}</div>
+              <label className={`block text-xs font-display font-bold tracking-wider uppercase mb-2 ${attemptedComplete && !data.assessorName ? 'text-red-500' : 'text-gray-500 print:text-gray-800'}`}>Assessor</label>
+              <input type="text" value={data.assessorName} onChange={e => updateField('assessorName', e.target.value)} className={`w-full bg-gray-50 border-2 rounded-md focus:border-brand-navy focus:bg-white focus:ring-2 focus:ring-brand-navy/10 px-3 py-2 text-sm font-bold text-gray-900 transition-all outline-none no-print ${attemptedComplete && !data.assessorName ? 'border-red-500 focus:ring-red-100' : 'border-gray-200'}`} placeholder="Full Name" />
+              {attemptedComplete && !data.assessorName && <span className="text-red-500 text-xs font-bold mt-1 block">Required</span>}
+              <div className="print-only font-bold text-black border-b border-gray-300 pb-1">{data.assessorName || 'N/A'}</div>
             </div>
 
             <div>
@@ -295,14 +346,48 @@ export default function App() {
           </div>
         )}
 
+        {/* Search & Filter Bar */}
+        <div className="mb-6 bg-white rounded-xl shadow-md border-2 border-gray-200 p-4 md:p-5 no-print flex flex-col md:flex-row gap-4 items-center">
+          <div className="flex-1 w-full">
+            <label className="block text-xs font-display font-bold text-gray-500 tracking-wider uppercase mb-1">Search Database</label>
+            <input 
+              type="text" 
+              value={searchQuery} 
+              onChange={e => setSearchQuery(e.target.value)} 
+              placeholder="Search checklist, notes, summary..." 
+              className="w-full bg-gray-50 border-2 border-gray-200 rounded-lg focus:bg-white focus:border-brand-navy focus:ring-2 focus:ring-brand-navy/10 px-4 py-3 text-sm font-bold text-gray-900 transition-all outline-none" 
+            />
+          </div>
+          <div className="w-full md:w-auto md:min-w-[200px]">
+            <label className="block text-xs font-display font-bold text-gray-500 tracking-wider uppercase mb-1">Checklist Unit Filter</label>
+            <select 
+              value={data.unitType} 
+              onChange={e => updateField('unitType', e.target.value)} 
+              className="w-full bg-gray-50 border-2 border-gray-200 rounded-lg focus:bg-white focus:border-brand-navy focus:ring-2 focus:ring-brand-navy/10 px-4 py-3 text-sm font-bold text-gray-900 transition-all outline-none"
+            >
+              <option>Climate-Controlled</option>
+              <option>Non-Climate Drive-Up</option>
+              <option>RV-Boat-Covered</option>
+              <option>RV-Boat-Enclosed</option>
+            </select>
+          </div>
+        </div>
+
         {/* Forensic Summary */}
-        <ForensicSummary data={data} updateField={updateField} toggleFollowUp={toggleFollowUp} addWorkOrder={addWorkOrder} />
+        <ForensicSummary 
+          data={data} 
+          updateField={updateField} 
+          toggleFollowUp={toggleFollowUp} 
+          updateFollowUpPriority={updateFollowUpPriority}
+          addWorkOrder={addWorkOrder} 
+          isOnline={isOnline}
+        />
 
         {/* Delta Report */}
-        <DeltaReport data={data} onImportBaseline={importBaseline} onUpdateCost={updateDeltaCost} />
+        <DeltaReport data={data} onImportBaseline={importBaseline} onUpdateCost={updateDeltaCost} onUpdateBaselineOverride={updateDeltaBaselineOverride} />
         
         {/* Checklists */}
-        <ChecklistView data={data} updateStatus={updateItemStatus} updateNote={updateItemNote} />
+        <ChecklistView data={data} updateStatus={updateItemStatus} updateNote={updateItemNote} searchQuery={searchQuery} />
 
         {/* Print-only Detailed Checklist */}
         <DetailedChecklistPrint data={data} />
@@ -323,9 +408,9 @@ export default function App() {
           <section className="bg-white rounded-xl shadow-lg border-2 border-gray-200 p-5 md:p-8 no-print">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
               <div className="flex items-center gap-4">
-                <h3 className="text-xl font-display font-black text-brand-navy uppercase tracking-widest">Inspector Signature</h3>
-                {data.inspectorSignature && (
-                  <img src={data.inspectorSignature} alt="Signature Preview" className="h-10 object-contain mix-blend-multiply opacity-50" />
+                <h3 className="text-xl font-display font-black text-brand-navy uppercase tracking-widest">Assessor Signature</h3>
+                {data.assessorSignature && (
+                  <img src={data.assessorSignature} alt="Signature Preview" className="h-10 object-contain mix-blend-multiply opacity-50" />
                 )}
               </div>
               <button 
@@ -333,12 +418,12 @@ export default function App() {
                 className="px-4 py-2 bg-brand-navy hover:bg-brand-navy-light text-white font-bold rounded-lg shadow transition-colors flex items-center gap-2"
               >
                 <PenTool size={16} />
-                {data.inspectorSignature ? 'Update' : 'Capture'}
+                {data.assessorSignature ? 'Update' : 'Capture'}
               </button>
             </div>
-            {data.inspectorSignature ? (
+            {data.assessorSignature ? (
               <div className="p-4 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center">
-                <img src={data.inspectorSignature} alt="Inspector Signature" className="max-h-24 object-contain mb-2 mix-blend-multiply" />
+                <img src={data.assessorSignature} alt="Assessor Signature" className="max-h-24 object-contain mb-2 mix-blend-multiply" />
                 <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Signed on: {new Date(data.signatureTimestamp!).toLocaleString()}</p>
               </div>
             ) : (
@@ -380,7 +465,7 @@ export default function App() {
         </div>
 
         {/* Printed Signature Block */}
-        {(data.inspectorSignature || data.tenantSignature) && (
+        {(data.assessorSignature || data.tenantSignature) && (
           <div className="print-only flex page-break justify-around items-center mt-12 page-break-inside-avoid">
              {data.tenantSignature && data.type === 'Move-In Assessment Report' && (
                <div className="flex flex-col items-center justify-center pt-8">
@@ -390,11 +475,11 @@ export default function App() {
                   </div>
                </div>
              )}
-             {data.inspectorSignature && (
+             {data.assessorSignature && (
                <div className="flex flex-col items-center justify-center pt-8">
-                  <img src={data.inspectorSignature} alt="Inspector Signature" className="max-h-[80px] object-contain mb-1 mix-blend-multiply" style={{ printColorAdjust: 'exact' }} />
+                  <img src={data.assessorSignature} alt="Assessor Signature" className="max-h-[80px] object-contain mb-1 mix-blend-multiply" style={{ printColorAdjust: 'exact' }} />
                   <div className="w-64 border-t border-black pt-1 text-center">
-                     <p className="font-bold text-sm">{data.inspectorName || 'Inspector Signature'}</p>
+                     <p className="font-bold text-sm">{data.assessorName || 'Assessor Signature'}</p>
                      <p className="text-xs text-gray-600">Signed: {new Date(data.signatureTimestamp!).toLocaleString()}</p>
                   </div>
                </div>
@@ -456,18 +541,19 @@ export default function App() {
           initialType={docGenType} 
           onClose={() => setDocGenOpen(false)} 
           onSaveSignature={(b64, ts) => {
-            updateField('inspectorSignature', b64);
+            updateField('assessorSignature', b64);
             updateField('signatureTimestamp', ts);
           }}
+          autoDownloadRef={autoDownloadRef}
         />
       )}
 
       {signOpen && (
         <SignatureCapture 
-          initialName={data.inspectorName}
+          initialName={data.assessorName}
           onCancel={() => setSignOpen(false)}
           onSave={(b64, ts) => {
-            updateField('inspectorSignature', b64);
+            updateField('assessorSignature', b64);
             updateField('signatureTimestamp', ts);
             setSignOpen(false);
           }}
@@ -580,6 +666,64 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {showFloatingBubble && (
+        <div 
+          onClick={() => {
+            const el = document.getElementById('forensic-summary');
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+          }}
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 md:left-auto md:right-8 md:translate-x-0 z-[50] bg-white/95 backdrop-blur-md border border-gray-200 shadow-2xl rounded-2xl p-4 w-[90%] max-w-sm cursor-pointer hover:bg-white hover:scale-[1.02] transition-all no-print"
+        >
+          {(() => {
+            const itemsArray = Object.values(data.items) as ChecklistItem[];
+            const hasPendingRed = itemsArray.some(i => i.tier === 'Red' && i.status === 'Pending');
+            const hasPendingYellow = itemsArray.some(i => i.tier === 'Yellow' && i.status === 'Pending');
+            const redFails = itemsArray.filter(i => i.tier === 'Red' && i.status === 'Fail');
+            const yellowFails = itemsArray.filter(i => i.tier === 'Yellow' && i.status === 'Fail');
+            const greenFails = itemsArray.filter(i => i.tier === 'Green' && i.status === 'Fail');
+
+            let status = 'IN PROGRESS';
+            let color = 'text-blue-600';
+            let bgClass = 'bg-blue-100';
+
+            if (!hasPendingRed && !hasPendingYellow) {
+              if (redFails.length > 0) {
+                status = 'UNSAFE';
+                color = 'text-red-700';
+                bgClass = 'bg-red-100';
+              } else if (yellowFails.length > 0) {
+                status = 'NOT RENT-READY';
+                color = 'text-amber-700';
+                bgClass = 'bg-amber-100';
+              } else {
+                status = 'RENT-READY';
+                color = 'text-green-700';
+                bgClass = 'bg-green-100';
+              }
+            }
+
+            return (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span className={`text-xs font-black uppercase tracking-widest px-2 py-0.5 rounded ${bgClass} ${color}`}>
+                    {status}
+                  </span>
+                  <div className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                    R:{redFails.length} Y:{yellowFails.length} G:{greenFails.length}
+                  </div>
+                </div>
+                {redFails.length > 0 && (
+                  <p className="text-xs text-red-700 font-bold line-clamp-1 border-l-2 border-red-500 pl-2">
+                    {redFails[0].text}
+                  </p>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
       {scraModalOpen && (
         <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in slide-in-from-bottom-4">
@@ -646,10 +790,13 @@ export default function App() {
               
               <div className="flex flex-col gap-3">
                 <button 
-                  onClick={() => openDocumentGenerator('Formal')}
+                  onClick={() => {
+                    autoDownloadRef.current = true;
+                    openDocumentGenerator('Formal');
+                  }}
                   className="px-4 py-3 bg-gray-100 hover:bg-gray-200 text-brand-navy font-bold rounded-lg shadow-sm transition-colors text-left flex items-center gap-2"
                 >
-                  <FileText size={18} /> Download Formal Report (HTML)
+                  <FileText size={18} /> Download Formal Report (PDF)
                 </button>
                 <button 
                   onClick={() => {
@@ -667,12 +814,12 @@ export default function App() {
                 </button>
                 <button 
                   onClick={() => {
-                    const failedItems = Object.values(data.items).filter(i => i.status === 'Fail').map(i => `- ${i.text} (${i.tier} Tier): ${i.note || 'No notes'}`).join('\n');
+                    const failedItems = (Object.values(data.items) as ChecklistItem[]).filter(i => i.status === 'Fail').map(i => `- ${i.text} (${i.tier} Tier): ${i.note || 'No notes'}`).join('\n');
                     const md = `# Assessment Summary: ${data.facilityName} - Unit ${data.unitNumber}
 Type: ${data.type}
 Date: ${new Date(data.date).toLocaleString()}
-Inspector: ${data.inspectorName}
-Total Repair Estimate: $${Object.values(data.deltaItems || {}).reduce((sum, item) => sum + (item.repairCostEstimate || 0), 0)}
+Assessor: ${data.assessorName}
+Total Repair Estimate: $${(Object.values(data.deltaItems || {}) as any[]).reduce((sum, item) => sum + (item.repairCostEstimate || 0), 0)}
 
 ## Failed Items
 ${failedItems || 'No failed items.'}`;
@@ -690,8 +837,8 @@ ${failedItems || 'No failed items.'}`;
                 </button>
                 <button 
                   onClick={() => {
-                    const failedItems = Object.values(data.items).filter(i => i.status === 'Fail').map(i => `- ${i.text} (${i.tier} Tier): ${i.note || 'No notes'}`).join('\n');
-                    const md = `Assessment Summary: ${data.facilityName} - Unit ${data.unitNumber}\nType: ${data.type}\nDate: ${new Date(data.date).toLocaleString()}\nInspector: ${data.inspectorName}\n\nFailed Items:\n${failedItems || 'No failed items.'}`;
+                    const failedItems = (Object.values(data.items) as ChecklistItem[]).filter(i => i.status === 'Fail').map(i => `- ${i.text} (${i.tier} Tier): ${i.note || 'No notes'}`).join('\n');
+                    const md = `Assessment Summary: ${data.facilityName} - Unit ${data.unitNumber}\nType: ${data.type}\nDate: ${new Date(data.date).toLocaleString()}\nAssessor: ${data.assessorName}\n\nFailed Items:\n${failedItems || 'No failed items.'}`;
                     const subject = encodeURIComponent(`Assessment Completed - ${data.unitNumber} at ${data.facilityName}`);
                     const body = encodeURIComponent(md);
                     window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');

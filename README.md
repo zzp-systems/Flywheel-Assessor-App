@@ -1,8 +1,8 @@
 # Flywheel Assessor App
 
-**Offline‑first field inspection tool for Texas self‑storage, built for Flywheel Investors.**
+**Offline‑first field assessment tool for Texas self‑storage, built for Flywheel Investors.**
 
-The Flywheel Assessor App is an offline-first, mobile-optimized procedural inspection tool built for zero-latency operations in rural storage markets. It empowers the field operations team with a "Special Ops" workflow to rapidly capture photographic evidence, document condition deltas, and automatically generate Texas Property Code Chapter 59 compliant forms on the go.
+The Flywheel Assessor App is an offline-first, mobile-optimized procedural assessment tool built for zero-latency operations in rural storage markets. It empowers the field operations team with a "Special Ops" workflow to rapidly capture photographic evidence, document condition deltas, and automatically generate Texas Property Code Chapter 59 compliant forms on the go.
 
 ### Links
 - 📄 [Product & Technical Reference PDF](public/Flywheel_Assessor_App_Reference.pdf)

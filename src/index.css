@@ -154,7 +154,7 @@
 @media print {
   @page {
     margin: 0.75in;
-    size: letter portrait;
+    size: legal portrait;
   }
 
   body {
@@ -164,7 +164,7 @@
   }
   
   .document-page.single-page {
-    height: 9.5in; /* 11in minus top/bottom margins */
+    height: 12.5in; /* 14in (Legal) minus top/bottom margins (0.75in each) */
     overflow: hidden;
   }
 

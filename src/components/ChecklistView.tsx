@@ -1,26 +1,65 @@
 import React from 'react';
 import { AssessmentData, ChecklistItem, Status, Tier } from '../types';
-import { CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Camera } from 'lucide-react';
 
 interface ChecklistViewProps {
   data: AssessmentData;
   updateStatus: (id: string, status: Status) => void;
   updateNote: (id: string, note: string) => void;
+  searchQuery?: string;
 }
 
-export function ChecklistView({ data, updateStatus, updateNote }: ChecklistViewProps) {
-  const itemsArray = Object.values(data.items);
+export function ChecklistView({ data, updateStatus, updateNote, searchQuery = '' }: ChecklistViewProps) {
+  const isRVBoat = data.unitType?.startsWith('RV-Boat');
+  const isNonClimate = data.unitType === 'Non-Climate Drive-Up';
+
+  const filterItem = (item: ChecklistItem) => {
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      if (!item.text.toLowerCase().includes(q) && !(item.note && item.note.toLowerCase().includes(q))) {
+        return false;
+      }
+    }
+
+    const t = item.text.toLowerCase();
+    const isHVAC = t.includes('hvac') || t.includes('humidity') || t.includes('climate') || t.includes('heater');
+    if ((isNonClimate || isRVBoat) && isHVAC) {
+      return false;
+    }
+
+    if (isRVBoat) {
+      const isStructuralAccess = t.includes('door') || t.includes('gate') || t.includes('access') || t.includes('structural') || t.includes('roof') || t.includes('pavement') || t.includes('lock') || t.includes('camera') || t.includes('fence') || t.includes('lighting') || t.includes('keypad') || t.includes('signage') || t.includes('generator') || t.includes('panel') || t.includes('extinguisher') || t.includes('water') || t.includes('pest') || t.includes('trash') || t.includes('key');
+      if (!isStructuralAccess) return false;
+    }
+
+    return true;
+  };
+
+  const itemsArray = Object.values(data.items).filter(filterItem);
   
   const redItems = itemsArray.filter(i => i.tier === 'Red');
   const yellowItems = itemsArray.filter(i => i.tier === 'Yellow');
   const greenItems = itemsArray.filter(i => i.tier === 'Green');
   const slateItems = itemsArray.filter(i => i.tier === 'Slate');
 
+  const getTierTooltip = (tierTitle: string) => {
+    if (tierTitle.includes('RED')) return "Critical life safety and security items. Any failure makes the unit UNSAFE and not rentable.";
+    if (tierTitle.includes('YELLOW')) return "Habitability and maintenance items. Failures indicate NOT RENT-READY.";
+    if (tierTitle.includes('GREEN')) return "Cosmetic and market-ready items. Failures do not affect rent-readiness.";
+    return "Security & Hardware Management.";
+  };
+
+  const highlightString = (text: string, query: string) => {
+    if (!query) return text;
+    const parts = text.split(new RegExp(`(${query})`, 'gi'));
+    return parts.map((p, i) => p.toLowerCase() === query.toLowerCase() ? <span key={i} className="bg-yellow-300 text-black">{p}</span> : p);
+  };
+
   const renderTier = (title: string, items: ChecklistItem[], colorClass: string, bgColor: string, borderClass: string, desc: string, icon: React.ReactNode) => {
     if (items.length === 0) return null;
     return (
       <div className={`mb-8 bg-white rounded-xl shadow-lg border-2 overflow-hidden ${borderClass}`}>
-        <div className={`${bgColor} ${colorClass} p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-black/10`}>
+        <div className={`${bgColor} ${colorClass} p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-black/10`} title={getTierTooltip(title)}>
           <div className="flex items-center gap-3">
             {icon}
             <h2 className="text-2xl font-display font-bold uppercase tracking-wider">{title}</h2>
@@ -35,10 +74,30 @@ export function ChecklistView({ data, updateStatus, updateNote }: ChecklistViewP
               className={`p-5 transition-all ${item.status === 'Fail' ? 'bg-red-50/80' : 'hover:bg-gray-50'}`}
             >
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                <div className="flex-1">
+                <div className="flex-1 flex items-start justify-between gap-2">
                   <p className={`text-[15px] sm:text-base font-bold text-gray-900 ${item.tier === 'Red' && item.status === 'Pending' ? 'animate-pulse text-brand-red' : ''}`}>
-                    {item.text}
+                    {highlightString(item.text, searchQuery)}
                   </p>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <button 
+                      onClick={() => window.dispatchEvent(new CustomEvent('trigger-photo-capture', { detail: { itemId: item.id } }))}
+                      className="no-print p-2 text-brand-navy hover:bg-blue-100 rounded-full transition-colors relative"
+                      title="Add Photo"
+                    >
+                      <Camera size={20} />
+                      {(() => {
+                        const count = data.photos.filter(p => (p.linkedItemIds || []).includes(item.id) || p.linkedItemId === item.id).length;
+                        if (count > 0) {
+                          return (
+                            <span className="absolute -top-1 -right-1 bg-brand-green text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                              {count}
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </button>
+                  </div>
                 </div>
                 
                 <div className="flex bg-gray-200 rounded-lg p-1 w-full sm:w-auto overflow-x-auto flex-shrink-0 shadow-inner no-print">
@@ -46,6 +105,7 @@ export function ChecklistView({ data, updateStatus, updateNote }: ChecklistViewP
                     <button
                       key={opt}
                       onClick={() => updateStatus(item.id, opt)}
+                      title={opt === 'Pass' ? 'Item meets standards' : opt === 'Fail' ? 'Item requires attention' : 'Item not present or applicable'}
                       className={`flex-1 sm:flex-none px-5 py-2 text-sm font-bold uppercase tracking-wider rounded-md transition-all border-2 ${
                         item.status === opt 
                           ? opt === 'Pass' ? 'bg-brand-green border-brand-green text-white shadow-md transform scale-[1.02]'
@@ -69,7 +129,7 @@ export function ChecklistView({ data, updateStatus, updateNote }: ChecklistViewP
                 </div>
               </div>
               
-              {/* Note field, auto expanding on click or if text exists */}
+              {/* Note field */}
               <div className="mt-4 no-print">
                 <input
                   type="text"

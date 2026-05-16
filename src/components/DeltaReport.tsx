@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { AssessmentData } from '../types';
+import { AssessmentData, Status } from '../types';
 import { FileDown, RefreshCcw } from 'lucide-react';
 
 interface DeltaReportProps {
   data: AssessmentData;
   onImportBaseline: (json: string) => void;
   onUpdateCost: (id: string, cost: number) => void;
+  onUpdateBaselineOverride: (id: string, status: Status) => void;
 }
 
-export function DeltaReport({ data, onImportBaseline, onUpdateCost }: DeltaReportProps) {
+export function DeltaReport({ data, onImportBaseline, onUpdateCost, onUpdateBaselineOverride }: DeltaReportProps) {
   const [localCosts, setLocalCosts] = useState<Record<string, string>>({});
   const [inputErrors, setInputErrors] = useState<Record<string, boolean>>({});
 
@@ -88,37 +89,60 @@ export function DeltaReport({ data, onImportBaseline, onUpdateCost }: DeltaRepor
           </div>
 
           <div className="space-y-4">
-            {Object.values(data.deltaItems).filter(i => i.isDeteriorated).map(item => (
-              <div key={item.id} className="border-l-4 border-l-brand-red border-y-2 border-r-2 border-gray-200 rounded-r-lg p-5 bg-white flex flex-col md:flex-row justify-between md:items-center gap-5 shadow-sm">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="bg-brand-red text-white text-[11px] font-black px-2.5 py-1 rounded uppercase tracking-widest shadow-sm">Deteriorated</span>
-                    <span className="text-xs font-bold text-gray-500 uppercase">From {item.baselineStatus} to {item.status}</span>
-                  </div>
-                  <p className="text-base font-bold text-gray-900">{item.text}</p>
-                </div>
-                <div className="w-full md:w-40 flex-shrink-0 bg-gray-50 p-3 rounded-lg border-2 border-gray-200">
-                  <label className="block text-xs font-black text-gray-500 mb-2 uppercase tracking-wide">Repair Est. ($)</label>
-                  <input 
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={localCosts[item.id] !== undefined ? localCosts[item.id] : ''}
-                    onChange={(e) => handleCostChange(item.id, e.target.value)}
-                    className={`w-full bg-white border-2 rounded-md px-3 py-2 text-base font-bold focus:ring-4 focus:outline-none transition-all ${
-                      inputErrors[item.id] 
-                        ? 'border-red-500 focus:ring-red-500/20 text-red-600' 
-                        : 'border-gray-300 focus:ring-brand-navy/10 focus:border-brand-navy'
-                    }`}
-                  />
-                  {inputErrors[item.id] && (
-                    <p className="text-[10px] text-red-500 font-bold mt-1.5 uppercase leading-tight">Must be positive number</p>
-                  )}
-                </div>
-              </div>
-            ))}
+            {Object.values(data.deltaItems).map(item => {
+              const showInReport = item.isDeteriorated || item.isNewDamage;
+              if (!showInReport) return null;
 
-            {totalDeteriorated === 0 && (
+              return (
+                <div key={item.id} className={`border-l-4 border-y-2 border-r-2 border-gray-200 rounded-r-lg p-5 bg-white flex flex-col md:flex-row justify-between md:items-center gap-5 shadow-sm transition-all ${item.isNewDamage ? 'border-l-brand-amber bg-amber-50/20' : 'border-l-brand-red'}`}>
+                  <div className="flex-1">
+                    <div className="flex flex-wrap items-center gap-3 mb-2">
+                      {item.isNewDamage ? (
+                        <span className="bg-brand-amber text-brand-navy-dark text-[11px] font-black px-2.5 py-1 rounded uppercase tracking-widest shadow-sm">New Damage</span>
+                      ) : (
+                        <span className="bg-brand-red text-white text-[11px] font-black px-2.5 py-1 rounded uppercase tracking-widest shadow-sm">Deteriorated</span>
+                      )}
+                      
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-gray-500 uppercase">Baseline Stat:</span>
+                        <select 
+                          value={item.baselineStatusOverride || item.baselineStatus}
+                          onChange={(e) => onUpdateBaselineOverride(item.id, e.target.value as Status)}
+                          className="text-xs font-black bg-gray-100 border border-gray-300 rounded px-1 py-0.5"
+                        >
+                          {(['Pass', 'Fail', 'N/A'] as Status[]).map(s => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      <span className="text-xs font-bold text-gray-500 uppercase">Current: {item.status}</span>
+                    </div>
+                    <p className="text-base font-bold text-gray-900">{item.text}</p>
+                  </div>
+                  <div className="w-full md:w-40 flex-shrink-0 bg-gray-50 p-3 rounded-lg border-2 border-gray-200">
+                    <label className="block text-xs font-black text-gray-500 mb-2 uppercase tracking-wide">Repair Est. ($)</label>
+                    <input 
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={localCosts[item.id] !== undefined ? localCosts[item.id] : ''}
+                      onChange={(e) => handleCostChange(item.id, e.target.value)}
+                      className={`w-full bg-white border-2 rounded-md px-3 py-2 text-base font-bold focus:ring-4 focus:outline-none transition-all ${
+                        inputErrors[item.id] 
+                          ? 'border-red-500 focus:ring-red-500/20 text-red-600' 
+                          : 'border-gray-300 focus:ring-brand-navy/10 focus:border-brand-navy'
+                      }`}
+                    />
+                    {inputErrors[item.id] && (
+                      <p className="text-[10px] text-red-500 font-bold mt-1.5 uppercase leading-tight">Must be positive number</p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            {Object.values(data.deltaItems).every(i => !i.isDeteriorated && !i.isNewDamage) && (
               <div className="text-center py-6 text-brand-green font-black uppercase tracking-widest bg-green-50 rounded-lg border-2 border-green-200 shadow-sm">
                 No deteriorated items found based on identical item text matches.
               </div>

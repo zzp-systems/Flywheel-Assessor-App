@@ -16,16 +16,20 @@ export interface Photo {
   dataUri: string;
   caption: string;
   timestamp: string;
-  linkedItemId?: string;
+  linkedItemId?: string; // Kept for backward compatibility parsing
+  linkedItemIds?: string[];
   facilityName?: string;
   unitNumber?: string;
   buildingFloor?: string;
+  skipped?: boolean;
 }
 
 export interface DeltaItem extends ChecklistItem {
   baselineStatus: Status;
   isDeteriorated: boolean;
   repairCostEstimate: number;
+  baselineStatusOverride?: Status;
+  isNewDamage?: boolean;
 }
 
 export interface WorkOrder {
@@ -37,7 +41,7 @@ export interface WorkOrder {
   facilityName: string;
   unitNumber: string;
   buildingFloor: string;
-  inspectorName: string;
+  assessorName: string;
   dateCreated: string;
   priority: 'Critical' | 'Routine';
   status: 'Open';
@@ -50,15 +54,15 @@ export interface AssessmentData {
   unitNumber: string;
   building: string;
   unitType: string;
-  inspectorName: string;
+  assessorName: string;
   date: string;
   weather: string;
   items: Record<string, ChecklistItem>;
   photos: Photo[];
-  runnerNotes: string;
-  managerFollowUp: Record<string, boolean>;
+  assessorNotes: string;
+  managerFollowUp: Record<string, boolean | { checked: boolean; priority: string }>;
   deltaItems?: Record<string, DeltaItem>;
-  inspectorSignature?: string;
+  assessorSignature?: string;
   signatureTimestamp?: string;
   tenantSignature?: string;
   tenantName?: string;

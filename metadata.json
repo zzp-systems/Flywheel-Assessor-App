@@ -1,10 +1,12 @@
 {
   "name": "Flywheel Assessor App",
-  "description": "An offline-first, mobile-optimized procedural inspection tool for Texas self-storage, built for Flywheel Investors. Supports Red/Yellow/Green compliance checks and legal notice generation.",
+  "description": "An offline-first, mobile-optimized procedural assessment tool for Texas self-storage, built for Flywheel Investors. Supports Red/Yellow/Green compliance checks and legal notice generation.",
   "requestFramePermissions": [
     "camera",
     "microphone",
     "geolocation"
   ],
-  "majorCapabilities": []
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

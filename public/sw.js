@@ -1,4 +1,4 @@
-const CACHE_NAME = 'flywheel-inspection-v1';
+const CACHE_NAME = 'flywheel-assessment-v1';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

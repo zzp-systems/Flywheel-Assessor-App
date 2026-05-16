@@ -79,12 +79,12 @@ export function useAssessment() {
       unitNumber: '',
       building: '',
       unitType: 'Climate-Controlled',
-      inspectorName: '',
+      assessorName: '',
       date: new Date().toISOString().slice(0, 16),
       weather: '',
       items: initializeItems('Move-In Assessment Report'),
       photos: [],
-      runnerNotes: '',
+      assessorNotes: '',
       managerFollowUp: {
         'Contact vendor': false,
         'Schedule maintenance': false,
@@ -142,7 +142,19 @@ export function useAssessment() {
 
   useEffect(() => {
     loadFromDB('current_assessment').then(saved => {
-      if (saved) {
+      if (saved && saved.photos) {
+        // Migration: linkedItemId -> linkedItemIds
+        saved.photos = saved.photos.map((p: any) => {
+          if (p.linkedItemId && !p.linkedItemIds) {
+            return { ...p, linkedItemIds: [p.linkedItemId] };
+          }
+          if (!p.linkedItemIds) {
+            return { ...p, linkedItemIds: [] };
+          }
+          return p;
+        });
+        setData(saved);
+      } else if (saved) {
         setData(saved);
       }
       setIsLoaded(true);
@@ -173,13 +185,38 @@ export function useAssessment() {
   };
 
   const updateItemStatus = (id: string, status: Status) => {
-    setData(prev => ({
-      ...prev,
-      items: {
-        ...prev.items,
-        [id]: { ...prev.items[id], status }
+    setData(prev => {
+      const item = prev.items[id];
+      let newNote = item.note || '';
+      
+      if (!newNote) {
+        const textLower = item.text.toLowerCase();
+        if (status === 'Pass') {
+          if (textLower.includes('clean')) newNote = 'Clean and in good condition.';
+          else if (textLower.includes('door') || textLower.includes('latch')) newNote = 'Operates smoothly without issues.';
+          else if (textLower.includes('light') || textLower.includes('bulb')) newNote = 'Lighting is functional.';
+          else if (textLower.includes('wall') || textLower.includes('floor') || textLower.includes('ceiling')) newNote = 'No visible damage or issues.';
+          else newNote = `${item.text.split('—')[0]} assessed as Pass.`;
+        } else if (status === 'Fail') {
+          if (textLower.includes('clean') || textLower.includes('trash') || textLower.includes('debris')) newNote = 'Requires cleaning or trash removal.';
+          else if (textLower.includes('door') || textLower.includes('latch')) newNote = 'Repair or adjustment needed. Does not operate correctly.';
+          else if (textLower.includes('light') || textLower.includes('bulb')) newNote = 'Replacement or repair required. Not functioning.';
+          else if (textLower.includes('wall') || textLower.includes('floor') || textLower.includes('ceiling')) newNote = 'Damage observed. Requires repair.';
+          else if (textLower.includes('lock') || textLower.includes('secure')) newNote = 'Security concern. Immediate action required.';
+          else newNote = `${item.text.split('—')[0]} assessed as Fail. Requires attention.`;
+        } else if (status === 'N/A') {
+          newNote = 'Not applicable to this unit.';
+        }
       }
-    }));
+
+      return {
+        ...prev,
+        items: {
+          ...prev.items,
+          [id]: { ...item, status, note: newNote }
+        }
+      };
+    });
   };
 
   const updateItemNote = (id: string, note: string) => {
@@ -192,7 +229,7 @@ export function useAssessment() {
     }));
   };
 
-  const addPhoto = (dataUri: string, linkedItemId?: string, metadata?: { facilityName: string, unitNumber: string, buildingFloor: string, caption?: string }) => {
+  const addPhoto = (dataUri: string, linkedItemIds: string[] = [], metadata?: { facilityName: string, unitNumber: string, buildingFloor: string, caption?: string }, skipped?: boolean) => {
     setData(prev => ({
       ...prev,
       photos: [...prev.photos, {
@@ -200,10 +237,11 @@ export function useAssessment() {
         dataUri,
         caption: metadata?.caption || '',
         timestamp: new Date().toISOString(),
-        linkedItemId,
+        linkedItemIds,
         facilityName: metadata?.facilityName,
         unitNumber: metadata?.unitNumber,
-        buildingFloor: metadata?.buildingFloor
+        buildingFloor: metadata?.buildingFloor,
+        skipped
       }]
     }));
   };
@@ -216,13 +254,34 @@ export function useAssessment() {
   };
 
   const toggleFollowUp = (key: string) => {
-    setData(prev => ({
-      ...prev,
-      managerFollowUp: {
-        ...prev.managerFollowUp,
-        [key]: !prev.managerFollowUp[key]
-      }
-    }));
+    setData(prev => {
+      const current = prev.managerFollowUp[key];
+      const isObj = typeof current === 'object';
+      const checked = isObj ? (current as any).checked : current as boolean;
+      const priority = isObj ? (current as any).priority : 'Medium';
+      return {
+        ...prev,
+        managerFollowUp: {
+          ...prev.managerFollowUp,
+          [key]: { checked: !checked, priority }
+        }
+      };
+    });
+  };
+
+  const updateFollowUpPriority = (key: string, priority: string) => {
+    setData(prev => {
+      const current = prev.managerFollowUp[key];
+      const isObj = typeof current === 'object';
+      const checked = isObj ? (current as any).checked : current as boolean;
+      return {
+        ...prev,
+        managerFollowUp: {
+          ...prev.managerFollowUp,
+          [key]: { checked, priority }
+        }
+      };
+    });
   };
 
   const [pendingMappings, setPendingMappings] = useState<any>(null);
@@ -256,14 +315,25 @@ export function useAssessment() {
 
           if (candidates.length === 1) {
             const baselineItem: any = candidates[0];
+            const isDeteriorated = baselineItem.status === 'Pass' && item.status === 'Fail';
             deltaItems[item.id] = {
               ...item,
               baselineStatus: baselineItem.status,
-              isDeteriorated: baselineItem.status === 'Pass' && item.status === 'Fail',
-              repairCostEstimate: 0
+              isDeteriorated,
+              repairCostEstimate: isDeteriorated ? (item.tier === 'Yellow' ? 50 : item.tier === 'Green' ? 25 : 0) : 0,
+              isNewDamage: false
             };
           } else if (candidates.length > 1) {
             ambiguous.push({ item, candidates });
+          } else if (item.status === 'Fail') {
+            // New Damage detection
+            deltaItems[item.id] = {
+              ...item,
+              baselineStatus: 'N/A',
+              isDeteriorated: true, // Treat as deteriorated for cost calculation
+              repairCostEstimate: item.tier === 'Yellow' ? 50 : item.tier === 'Green' ? 25 : 0,
+              isNewDamage: true
+            };
           }
         });
 
@@ -296,11 +366,13 @@ export function useAssessment() {
         const resolvedId = resolvedMappings[amb.item.id];
         if (resolvedId && baselineItems[resolvedId]) {
           const baselineItem: any = baselineItems[resolvedId];
+          const isDeteriorated = baselineItem.status === 'Pass' && amb.item.status === 'Fail';
           newDelta[amb.item.id] = {
             ...amb.item,
             baselineStatus: baselineItem.status,
-            isDeteriorated: baselineItem.status === 'Pass' && amb.item.status === 'Fail',
-            repairCostEstimate: 0
+            isDeteriorated,
+            repairCostEstimate: isDeteriorated ? (amb.item.tier === 'Yellow' ? 50 : amb.item.tier === 'Green' ? 25 : 0) : 0,
+            isNewDamage: false
           };
         }
       });
@@ -318,6 +390,27 @@ export function useAssessment() {
         deltaItems: {
           ...prev.deltaItems,
           [id]: { ...prev.deltaItems[id], repairCostEstimate: cost }
+        }
+      };
+    });
+  };
+
+  const updateDeltaBaselineOverride = (id: string, status: Status) => {
+    setData(prev => {
+      if (!prev.deltaItems || !prev.deltaItems[id]) return prev;
+      const item = prev.deltaItems[id];
+      const baselineStatus = status;
+      const isDeteriorated = baselineStatus === 'Pass' && item.status === 'Fail';
+      
+      return {
+        ...prev,
+        deltaItems: {
+          ...prev.deltaItems,
+          [id]: { 
+            ...item, 
+            baselineStatusOverride: status,
+            isDeteriorated: item.isNewDamage ? true : isDeteriorated
+          }
         }
       };
     });
@@ -342,7 +435,7 @@ export function useAssessment() {
             facilityName: prev.facilityName,
             unitNumber: prev.unitNumber,
             buildingFloor: prev.building,
-            inspectorName: prev.inspectorName,
+            assessorName: prev.assessorName,
             dateCreated: new Date().toISOString(),
             priority: item.tier === 'Red' ? 'Critical' : 'Routine',
             status: 'Open'
@@ -380,8 +473,10 @@ export function useAssessment() {
     addPhoto,
     removePhoto,
     toggleFollowUp,
+    updateFollowUpPriority,
     importBaseline,
     updateDeltaCost,
+    updateDeltaBaselineOverride,
     pendingMappings,
     cancelMapping,
     confirmMapping,

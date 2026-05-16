@@ -15,7 +15,7 @@ export const noticeOfEntryTemplate = `
       This notice is to inform you that Flywheel Investors LLC, as operator of <span class="placeholder-data" data-field="facilityName">[Facility Name]</span>, will enter Storage Unit <span class="placeholder-data" data-field="unitNumber">[Unit Number]</span> on <span class="placeholder-data" data-field="dateOfEntry">[Date of Entry]</span> between <span class="placeholder-data" data-field="timeWindow">[Time Window]</span> for the following purpose: <span class="placeholder-data" data-field="reasonForEntry">[Reason for Entry]</span>. 
     </p>
     <p>
-      This entry is conducted in accordance with the rental agreement executed on <span class="placeholder-data" data-field="leaseStartDate">[Lease Start Date]</span>, which grants the operator right of access upon three (3) days prior written notice. If you have any questions, please contact <span class="placeholder-data" data-field="inspectorName">[Inspector Name]</span> at the facility office. 
+      This entry is conducted in accordance with the rental agreement executed on <span class="placeholder-data" data-field="leaseStartDate">[Lease Start Date]</span>, which grants the operator right of access upon three (3) days prior written notice. If you have any questions, please contact <span class="placeholder-data" data-field="assessorName">[Assessor Name]</span> at the facility office. 
     </p>
     <p>
       This notice is provided in compliance with Texas Property Code and the terms of your rental agreement.
@@ -30,7 +30,7 @@ export const noticeOfEntryTemplate = `
       <span class="placeholder-data" data-field="signatureImage"></span>
     </div>
     <p style="margin-top: 0.5rem; font-weight: bold; font-size: 10pt;">
-      <span class="placeholder-data" data-field="inspectorName">[Inspector Name]</span>
+      <span class="placeholder-data" data-field="assessorName">[Assessor Name]</span>
     </p>
     <p style="font-size: 8pt; color: #666; margin-top: 0.25rem;">
       <span class="placeholder-data" data-field="signatureTimestamp"></span>
@@ -72,7 +72,7 @@ export const noticeOfClaimTemplate = `
       <span class="placeholder-data" data-field="signatureImage"></span>
     </div>
     <p style="margin-top: 0.5rem; font-weight: bold; font-size: 10pt;">
-      <span class="placeholder-data" data-field="inspectorName">[Inspector Name]</span>
+      <span class="placeholder-data" data-field="assessorName">[Assessor Name]</span>
     </p>
     <p style="font-size: 8pt; color: #666; margin-top: 0.25rem;">
       <span class="placeholder-data" data-field="signatureTimestamp"></span>
@@ -103,44 +103,57 @@ export function generateFormalReportHTML(data: any): string {
 
   let photosHtml = '';
   if (data.photos && data.photos.length > 0) {
-    let gridItems = '';
-    data.photos.forEach((photo: any) => {
-      const linkedItem = photo.linkedItemId ? data.items[photo.linkedItemId] : null;
-      const itemName = linkedItem ? linkedItem.text.split('—')[0] : 'Unlinked';
-      const loc = `${photo.facilityName || data.facilityName || ''} - Unit ${photo.unitNumber || data.unitNumber || ''}`;
+    const photosPerPage = 6;
+    const totalPages = Math.ceil(data.photos.length / photosPerPage);
+    
+    for (let p = 0; p < totalPages; p++) {
+      const pagePhotos = data.photos.slice(p * photosPerPage, (p + 1) * photosPerPage);
+      let gridItems = '';
       
-      gridItems += `
-        <div class="photo-print-card">
-          <div class="img-container">
-            <img src="${photo.dataUri}" alt="Evidence" />
+      pagePhotos.forEach((photo: any) => {
+        const ids = photo.linkedItemIds || (photo.linkedItemId ? [photo.linkedItemId] : []);
+        const itemNames = ids.map((id: string) => data.items[id] ? data.items[id].text.split('—')[0] : id).join(', ');
+        const itemName = itemNames || 'Unlinked';
+        const loc = `${photo.facilityName || data.facilityName || ''} - Unit ${photo.unitNumber || data.unitNumber || ''}`;
+        
+        gridItems += `
+          <div class="photo-print-card">
+            <div class="img-container">
+              <img src="${photo.dataUri}" alt="Evidence" />
+            </div>
+            <div class="photo-meta">
+              <p><strong>Item:</strong> ${itemName}</p>
+              <p><strong>Location:</strong> ${loc}</p>
+              <p style="margin-top: 0.5rem;" class="no-print">
+                <a href="${photo.dataUri}" target="_blank" rel="noreferrer" class="view-btn">View Full Size</a>
+              </p>
+            </div>
           </div>
-          <div class="photo-meta">
-            <p><strong>Item:</strong> ${itemName}</p>
-            <p><strong>Location:</strong> ${loc}</p>
-            <p style="margin-top: 0.5rem;">
-              <a href="${photo.dataUri}" target="_blank" rel="noreferrer" class="view-btn">View Full Size</a>
-            </p>
+        `;
+      });
+      
+      photosHtml += `
+        <div class="page-break" style="margin-top: 2rem;">
+          <div class="section-title" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 1rem;">
+            <span>PHOTOGRAPHIC EVIDENCE</span>
+            <span style="font-size: 10pt; font-family: sans-serif;">${p + 1} of ${totalPages}</span>
+          </div>
+          <div class="photo-print-grid">
+            ${gridItems}
           </div>
         </div>
       `;
-    });
-    
-    photosHtml = `
-      <div class="section-title page-break" style="margin-top: 2rem;">PHOTOGRAPHIC EVIDENCE</div>
-      <div class="photo-print-grid">
-        ${gridItems}
-      </div>
-    `;
+    }
   }
 
   let signatureHtml = '';
-  if (data.inspectorSignature) {
+  if (data.assessorSignature) {
     signatureHtml = `
       <div class="signature-block page-break-inside-avoid" style="margin-top: 4rem; text-align: center;">
         <div style="width: 250px; margin: 0 auto; border-bottom: 1px solid #000; min-height: 60px; display: flex; align-items: flex-end; justify-content: center;">
-          <img src="${data.inspectorSignature}" style="max-height: 80px; mix-blend-mode: multiply; print-color-adjust: exact;" />
+          <img src="${data.assessorSignature}" style="max-height: 80px; mix-blend-mode: multiply; print-color-adjust: exact;" />
         </div>
-        <p style="margin-top: 0.5rem; font-weight: bold; font-size: 10pt;">${data.inspectorName || 'Inspector Signature'}</p>
+        <p style="margin-top: 0.5rem; font-weight: bold; font-size: 10pt;">${data.assessorName || 'Assessor Signature'}</p>
         <p style="font-size: 8pt; color: #666; margin-top: 0.25rem;">Signed: ${new Date(data.signatureTimestamp!).toLocaleString()}</p>
       </div>
     `;
@@ -183,7 +196,7 @@ export function generateFormalReportHTML(data: any): string {
     { id: 'Slate', name: 'ACCESS CREDENTIALS & ISSUED ITEMS', color: '#1F2937' }
   ];
 
-  detailedChecklistHtml += '<div class="section-title page-break" style="margin-top: 2rem;">DETAILED INSPECTION CHECKLIST</div>';
+  detailedChecklistHtml += '<div class="section-title page-break" style="margin-top: 2rem;">DETAILED ASSESSMENT CHECKLIST</div>';
   detailedChecklistHtml += '<p style="font-size: 9pt; font-weight: bold; font-style: italic; margin-bottom: 1rem; color: #4b5563;">Complete Item-by-Assessment Results</p>';
   
   tiers.forEach(tier => {
@@ -234,21 +247,21 @@ export function generateFormalReportHTML(data: any): string {
   </div>
   
   <div class="document-title">
-    <h3>FORMAL INSPECTION REPORT</h3>
+    <h3>${(data.type || 'FORMAL ASSESSMENT REPORT').toUpperCase()}</h3>
     <p class="subtitle">Self-Storage Facility Condition Assessment</p>
   </div>
 
   <div class="document-body">
     <table class="info-table">
       <tr><td><strong>Facility:</strong> ${data.facilityName || 'N/A'}</td><td><strong>Unit Type:</strong> ${data.unitType || 'N/A'}</td></tr>
-      <tr><td><strong>Unit:</strong> ${data.unitNumber || 'N/A'}</td><td><strong>Inspector:</strong> ${data.inspectorName || 'N/A'}</td></tr>
+      <tr><td><strong>Unit:</strong> ${data.unitNumber || 'N/A'}</td><td><strong>Assessor:</strong> ${data.assessorName || 'N/A'}</td></tr>
       <tr><td><strong>Building:</strong> ${data.building || 'N/A'}</td><td><strong>Weather:</strong> ${data.weather || 'N/A'}</td></tr>
     </table>
 
     <div class="section-title">FORENSIC SUMMARY</div>
     <div class="summary-box">
-      <h4>Runner Notes / Deficiencies</h4>
-      <p>${data.runnerNotes ? data.runnerNotes.replace(/\n/g, '<br/>') : 'None'}</p>
+      <h4>Assessor Notes / Deficiencies</h4>
+      <p>${data.assessorNotes ? data.assessorNotes.replace(/\n/g, '<br/>') : 'None'}</p>
       
       <h4 style="margin-top: 1rem;">Failed Items</h4>
       ${failedItemsHtml || '<p>No failed items.</p>'}
@@ -265,7 +278,7 @@ export function generateFormalReportHTML(data: any): string {
   </div>
 
   <div class="document-footer">
-    Flywheel Investors LLC — Texas Property Code Chapter 59 — Assessment Report — Generated ${formattedDate}
+    Flywheel Investors LLC — Texas Property Code Chapter 59 — ${data.type || 'Assessment Report'} — Generated ${formattedDate}
   </div>
 </div>
 `;
@@ -280,42 +293,58 @@ export function generateHabitationReportHTML(data: any): string {
 
   let photosHtml = '';
   if (data.photos && data.photos.length > 0) {
-    let gridItems = '';
-    const linkedPhotos = data.photos.filter((p: any) => p.linkedItemId === 'y-mid-6');
-    linkedPhotos.forEach((photo: any) => {
-      const loc = `${photo.facilityName || data.facilityName || ''} - Unit ${photo.unitNumber || data.unitNumber || ''}`;
-      
-      gridItems += `
-        <div class="photo-print-card">
-          <div class="img-container">
-            <img src="${photo.dataUri}" alt="Evidence" />
-          </div>
-          <div class="photo-meta">
-            <p><strong>Item:</strong> Habitation Evidence</p>
-            <p><strong>Location:</strong> ${loc}</p>
-          </div>
-        </div>
-      `;
+    const linkedPhotos = data.photos.filter((p: any) => {
+      const ids = p.linkedItemIds || (p.linkedItemId ? [p.linkedItemId] : []);
+      return ids.includes('y-mid-6');
     });
-    
+
     if (linkedPhotos.length > 0) {
-      photosHtml = `
-        <div class="section-title" style="margin-top: 2rem;">PHOTOGRAPHIC EVIDENCE</div>
-        <div class="photo-print-grid">
-          ${gridItems}
-        </div>
-      `;
+      const photosPerPage = 6;
+      const totalPages = Math.ceil(linkedPhotos.length / photosPerPage);
+
+      for (let p = 0; p < totalPages; p++) {
+        const pagePhotos = linkedPhotos.slice(p * photosPerPage, (p + 1) * photosPerPage);
+        let gridItems = '';
+        
+        pagePhotos.forEach((photo: any) => {
+          const loc = `${photo.facilityName || data.facilityName || ''} - Unit ${photo.unitNumber || data.unitNumber || ''}`;
+          
+          gridItems += `
+            <div class="photo-print-card">
+              <div class="img-container">
+                <img src="${photo.dataUri}" alt="Evidence" />
+              </div>
+              <div class="photo-meta">
+                <p><strong>Item:</strong> Habitation Evidence</p>
+                <p><strong>Location:</strong> ${loc}</p>
+              </div>
+            </div>
+          `;
+        });
+        
+        photosHtml += `
+          <div class="page-break" style="margin-top: 2rem;">
+            <div class="section-title" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 1rem;">
+              <span>PHOTOGRAPHIC EVIDENCE</span>
+              <span style="font-size: 10pt; font-family: sans-serif;">${p + 1} of ${totalPages}</span>
+            </div>
+            <div class="photo-print-grid">
+              ${gridItems}
+            </div>
+          </div>
+        `;
+      }
     }
   }
 
   let signatureHtml = '';
-  if (data.inspectorSignature) {
+  if (data.assessorSignature) {
     signatureHtml = `
       <div class="signature-block page-break-inside-avoid" style="margin-top: 4rem; text-align: center;">
         <div style="width: 250px; margin: 0 auto; border-bottom: 1px solid #000; min-height: 60px; display: flex; align-items: flex-end; justify-content: center;">
-          <img src="${data.inspectorSignature}" style="max-height: 80px; mix-blend-mode: multiply; print-color-adjust: exact;" />
+          <img src="${data.assessorSignature}" style="max-height: 80px; mix-blend-mode: multiply; print-color-adjust: exact;" />
         </div>
-        <p style="margin-top: 0.5rem; font-weight: bold; font-size: 10pt;">${data.inspectorName || 'Inspector Signature'}</p>
+        <p style="margin-top: 0.5rem; font-weight: bold; font-size: 10pt;">${data.assessorName || 'Assessor Signature'}</p>
         <p style="font-size: 8pt; color: #666; margin-top: 0.25rem;">Signed: ${new Date(data.signatureTimestamp!).toLocaleString()}</p>
       </div>
     `;
@@ -336,21 +365,34 @@ export function generateHabitationReportHTML(data: any): string {
   <div class="document-body flex-grow">
     <table class="info-table">
       <tr><td><strong>Facility:</strong> ${data.facilityName || 'N/A'}</td><td><strong>Date:</strong> ${new Date(data.date).toLocaleDateString()}</td></tr>
-      <tr><td><strong>Unit:</strong> ${data.unitNumber || 'N/A'}</td><td><strong>Inspector:</strong> ${data.inspectorName || 'N/A'}</td></tr>
+      <tr><td><strong>Unit:</strong> ${data.unitNumber || 'N/A'}</td><td><strong>Assessor:</strong> ${data.assessorName || 'N/A'}</td></tr>
     </table>
 
     <div style="margin-top: 2rem; padding: 1.5rem; background-color: #fef2f2; border: 2px solid #dc2626; border-radius: 0.5rem; color: #991b1b; font-weight: 500;">
       <p>This report documents evidence of unauthorized habitation in the above-referenced storage unit, in violation of Texas Property Code §59.009 and the facility's rental agreement. The operator reserves all rights to terminate the lease, remove the occupant, and seek legal remedies.</p>
     </div>
 
-    <div class="section-title" style="margin-top: 2rem;">INSPECTOR NOTES</div>
+    <div class="section-title" style="margin-top: 2rem;">ASSESSOR NOTES</div>
     <div class="summary-box">
       <p>${note ? note.replace(/\n/g, '<br/>') : 'None'}</p>
     </div>
     
     ${photosHtml}
 
-    ${signatureHtml}
+    ${(() => {
+      if (data.assessorSignature) {
+        return `
+          <div class="signature-block page-break-inside-avoid" style="margin-top: 4rem; text-align: center;">
+            <div style="width: 250px; margin: 0 auto; border-bottom: 1px solid #000; min-height: 60px; display: flex; align-items: flex-end; justify-content: center;">
+              <img src="${data.assessorSignature}" style="max-height: 80px; mix-blend-mode: multiply; print-color-adjust: exact;" />
+            </div>
+            <p style="margin-top: 0.5rem; font-weight: bold; font-size: 10pt;">${data.assessorName || 'Assessor Signature'}</p>
+            <p style="font-size: 8pt; color: #666; margin-top: 0.25rem;">Signed: ${new Date(data.signatureTimestamp!).toLocaleString()}</p>
+          </div>
+        `;
+      }
+      return '';
+    })()}
 
   </div>
 

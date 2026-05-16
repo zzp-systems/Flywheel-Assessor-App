@@ -12,7 +12,7 @@ export function DetailedChecklistPrint({ data }: { data: AssessmentData }) {
   return (
     <div className="print-only page-break mt-8">
       <div className="mb-6">
-        <h3 className="text-xl font-bold bg-brand-navy text-white p-2 mb-1 font-display">DETAILED INSPECTION CHECKLIST</h3>
+        <h3 className="text-xl font-bold bg-brand-navy text-white p-2 mb-1 font-display">DETAILED ASSESSMENT CHECKLIST</h3>
         <p className="text-sm font-bold text-gray-600 px-2 italic">Complete Item-by-Assessment Results</p>
       </div>
 

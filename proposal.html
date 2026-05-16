@@ -191,15 +191,15 @@
     <div class="page page-break">
       <h2>1. Executive Summary</h2>
       <p>
-        The Flywheel Assessor App is a purpose-built, military-grade field inspection tool designed specifically for Flywheel Investors' self-storage operations in Texas. Recognizing the unique challenges of managing remote, unstaffed facilities with a lean "Special Ops" team, this mobile-first application replaces scattered paper checklists and disjointed photo galleries with a streamlined, legally defensive digital workflow.
+        The Flywheel Assessor App is a purpose-built, military-grade field assessment tool designed specifically for Flywheel Investors' self-storage operations in Texas. Recognizing the unique challenges of managing remote, unstaffed facilities with a lean "Special Ops" team, this mobile-first application replaces scattered paper checklists and disjointed photo galleries with a streamlined, legally defensive digital workflow.
       </p>
       <p>
         By enforcing strict validation frameworks and auto-watermarking visual evidence, the app guarantees that every unit turnover or health-and-safety check meets Flywheel's exacting standards. The core value of this application is delivered across three critical pillars:
       </p>
       <ul>
-        <li><strong>Operational Efficiency:</strong> Eliminates guesswork for field runners. Intuitive traffic-light logic dictates exactly when an inspector can mark a unit rent-ready versus when a property manager must intervene, reducing time-on-site and accelerating unit turnover.</li>
+        <li><strong>Operational Efficiency:</strong> Eliminates guesswork for field assessors. Intuitive traffic-light logic dictates exactly when an assessor can mark a unit rent-ready versus when a property manager must intervene, reducing time-on-site and accelerating unit turnover.</li>
         <li><strong>Legal Compliance (TX Chapter 59):</strong> Provides ironclad documentation. Every captured photo is permanently stamped with the facility name, unit number, and an unalterable timestamp—providing a defensive shield against tenant damage disputes or lien sale challenges.</li>
-        <li><strong>Cloud-Readiness & Offline Resilience:</strong> Engineered to withstand the realities of Texas metal storage buildings. The app works flawlessly without a cellular connection, saving data directly to the device, and seamlessly synchronizing to cloud infrastructure the moment the inspector steps back into coverage.</li>
+        <li><strong>Cloud-Readiness & Offline Resilience:</strong> Engineered to withstand the realities of Texas metal storage buildings. The app works flawlessly without a cellular connection, saving data directly to the device, and seamlessly synchronizing to cloud infrastructure the moment the assessor steps back into coverage.</li>
       </ul>
     </div>
 
@@ -208,10 +208,10 @@
       <h2>2. Feature Walkthrough</h2>
 
       <div class="no-break">
-        <h3>2.1 Inspection Type Selection</h3>
-        <p>Operations dictate the mission. The app adapts its entire footprint based on the specific type of inspection being executed (Move-In Baseline, Mid-Tenancy H&S, or Move-Out Turnover), dynamically adjusting the checklist requirements so inspectors don't waste time looking at irrelevant criteria.</p>
+        <h3>2.1 Assessment Type Selection</h3>
+        <p>Operations dictate the mission. The app adapts its entire footprint based on the specific type of assessment being executed (Move-In Baseline, Mid-Tenancy H&S, or Move-Out Turnover), dynamically adjusting the checklist requirements so assessors don't waste time looking at irrelevant criteria.</p>
         <div class="screenshot-placeholder">
-          [Insert Screenshot of Inspection Dashboard]
+          [Insert Screenshot of Assessment Dashboard]
           <span>Displaying the dropdown menu changing the checklist type.</span>
         </div>
       </div>
@@ -227,7 +227,7 @@
 
       <div class="no-break">
         <h3>2.3 Strict Unit Status Logic</h3>
-        <p>The app acts as a strict gateway. A unit cannot accidentally be marketed as Rent-Ready if it is unsafe. Passing the buck is impossible: if an item is bypassed ("Pending"), the unit shows an <strong>INSPECTION IN PROGRESS</strong> banner. A single Red failure throws an <strong>UNSAFE</strong> lock. A Yellow failure triggers a <strong>NOT RENT-READY</strong> status. Only perfection yields a Green <strong>RENT-READY</strong> banner.</p>
+        <p>The app acts as a strict gateway. A unit cannot accidentally be marketed as Rent-Ready if it is unsafe. Passing the buck is impossible: if an item is bypassed ("Pending"), the unit shows an <strong>ASSESSMENT IN PROGRESS</strong> banner. A single Red failure throws an <strong>UNSAFE</strong> lock. A Yellow failure triggers a <strong>NOT RENT-READY</strong> status. Only perfection yields a Green <strong>RENT-READY</strong> banner.</p>
         <div class="screenshot-placeholder">
           [Insert Screenshot of the 4 Status Banners]
           <span>Showing the bold, high-visibility status headers.</span>
@@ -239,7 +239,7 @@
     <div class="page page-break">
       <div class="no-break">
         <h3>2.4 Defensive Photo Watermarking & Linking</h3>
-        <p>In property management, an unmarked photo is a legal liability. When an inspector adds a photo via their native smartphone camera or gallery, a full-screen modal forces them to link that photo to a specific checklist item (e.g., "Fire Sprinkler"). The app then automatically burns a permanent, high-contrast watermark into the bottom right corner of the image, displaying the Facility, Unit Number, Building, and ISO Timestamp. This ensures absolute Chapter 59 compliance.</p>
+        <p>In property management, an unmarked photo is a legal liability. When an assessor adds a photo via their native smartphone camera or gallery, a full-screen modal forces them to link that photo to a specific checklist item (e.g., "Fire Sprinkler"). The app then automatically burns a permanent, high-contrast watermark into the bottom right corner of the image, displaying the Facility, Unit Number, Building, and ISO Timestamp. This ensures absolute Chapter 59 compliance.</p>
         <div class="screenshot-placeholder">
           [Insert Screenshot of Watermarked Photo and Linking Modal]
           <span>Left: Item selection modal. Right: Final photo with burnt-in watermark.</span>
@@ -257,7 +257,7 @@
 
       <div class="no-break">
         <h3>2.6 Move-Out Delta Report & Repair Claims</h3>
-        <p>Calculating tenant damage chargebacks is now automated. By importing the JSON export from a tenant's "Move-In Baseline", the app runs a side-by-side comparison on the Move-Out. Anything that degraded from 'Pass' to 'Fail' is flagged as <strong>DETERIORATED</strong>. The inspector inputs repair estimates directly into validated, financial-grade fields (preventing negative numbers or typos) to spit out a total claim amount instantly.</p>
+        <p>Calculating tenant damage chargebacks is now automated. By importing the JSON export from a tenant's "Move-In Baseline", the app runs a side-by-side comparison on the Move-Out. Anything that degraded from 'Pass' to 'Fail' is flagged as <strong>DETERIORATED</strong>. The assessor inputs repair estimates directly into validated, financial-grade fields (preventing negative numbers or typos) to spit out a total claim amount instantly.</p>
         <div class="screenshot-placeholder">
           [Insert Screenshot of Delta Report Interface]
           <span>Displaying the side-by-side comparison and numeric cost inputs.</span>
@@ -268,7 +268,7 @@
     <div class="page page-break">
       <div class="no-break">
         <h3>2.7 Forensic Summary & Manager Handoff</h3>
-        <p>At the close of the inspection, the app compiles a clean Forensic Summary. It strips away all the "Passing" noise and isolates only Failed Items and Runner Notes. It generates a brief checklist for property managers (e.g., "Schedule Maintenance Vendor") to bridge the gap between field execution and back-office administration.</p>
+        <p>At the close of the assessment, the app compiles a clean Forensic Summary. It strips away all the "Passing" noise and isolates only Failed Items and Assessor Notes. It generates a brief checklist for property managers (e.g., "Schedule Maintenance Vendor") to bridge the gap between field execution and back-office administration.</p>
         <div class="screenshot-placeholder">
           [Insert Screenshot of the Forensic Summary]
           <span>Displaying the failed items log and manager task checkboxes.</span>
@@ -286,7 +286,7 @@
 
       <div class="no-break">
         <h3>2.9 Offline-First Resilience</h3>
-        <p>Texas metal drive-up buildings block cellular signals. Instead of crashing, the app features an embedded Service Worker and IndexedDB architecture. If the inspector loses signal, a warning banner appears, but they can continue inspecting and photographing. Everything saves locally to the phone. Once leaving the facility and regaining LTE/5G, the app automatically syncs the data outward.</p>
+        <p>Texas metal drive-up buildings block cellular signals. Instead of crashing, the app features an embedded Service Worker and IndexedDB architecture. If the assessor loses signal, a warning banner appears, but they can continue assessing and photographing. Everything saves locally to the phone. Once leaving the facility and regaining LTE/5G, the app automatically syncs the data outward.</p>
         <div class="screenshot-placeholder">
           [Insert Screenshot of Offline Banner]
           <span>Showing the "Offline Mode (Saving Locally)" and "Syncing" indicators.</span>
@@ -300,7 +300,7 @@
       <p>This software strictly aligns with Flywheel Investors' thesis of bringing operational intensity and capital efficiency to under-managed storage assets.</p>
       
       <ul>
-        <li><strong>Force Multiplier for Lean Teams:</strong> The "Special Ops" mindset requires tools that allow one operator to do the work of three. By eliminating duplicate data entry and manual photo-sorting back at the desk, runners can hit more facilities per day.</li>
+        <li><strong>Force Multiplier for Lean Teams:</strong> The "Special Ops" mindset requires tools that allow one operator to do the work of three. By eliminating duplicate data entry and manual photo-sorting back at the desk, assessors can hit more facilities per day.</li>
         <li><strong>Bulletproof Evictions & Lien Sales:</strong> Texas Property Code Chapter 59 requires strict timelines and irrefutable proof of unit condition or abandonment. Tamper-evident, watermarked photos linked directly to unit statuses protect Flywheel from tenant litigation and wrongful sale claims.</li>
         <li><strong>Radical Standardization:</strong> Whether taking over a mom-and-pop facility in rural Texas or stabilizing an urban asset, the traffic-light framework ensures every Flywheel property adheres to the exact same safety and visual standards, making portfolio oversight highly predictable for the executive team.</li>
       </ul>
@@ -313,17 +313,17 @@
       <h2>5. Next Steps & Rollout Strategy</h2>
       <p>To integrate this capability smoothly into current operations, we recommend the following cadence:</p>
       <ul>
-        <li><strong>Phase 1: Alpha Field Test.</strong> Deploy the application to a single "point man" inspector for a live Move-In and Move-Out turnover at an active facility to validate the workflow under real-world conditions.</li>
-        <li><strong>Phase 2: Feedback & Tweaks.</strong> Review the generated PDF and JSON telemetry. Adjust specific checklist vocabulary or photo requirements based on the operators' physical constraints.</li>
+        <li><strong>Phase 1: Alpha Field Test.</strong> Deploy the application to a single "point man" assessor for a live Move-In and Move-Out turnover at an active facility to validate the workflow under real-world conditions.</li>
+        <li><strong>Phase 2: Feedback & Tweaks.</strong> Review the generated PDF and JSON telemetry. Adjust specific assessment vocabulary or photo requirements based on the operators' physical constraints.</li>
         <li><strong>Phase 3: Deep Integration.</strong> Hook the app's JSON export functionality directly into Flywheel's internal databases or communication tools (e.g., posting a message to slack when a "Red/Unsafe" payload hits the server).</li>
-        <li><strong>Phase 4: Full Deployment.</strong> Roll out standardized web-portal access to all regional managers and field runners.</li>
+        <li><strong>Phase 4: Full Deployment.</strong> Roll out standardized web-portal access to all regional managers and field assessors.</li>
       </ul>
     </div>
 
     <!-- APPENDIX -->
     <div class="page page-break">
       <h2>Appendix: JSON Telemetry Schema</h2>
-      <p>The application outputs all inspection data into a highly structured JSON format, guaranteeing easy downstream integration via APIs or Webhooks. Below is the structural schema demonstrating the comprehensive metadata captured during an inspection event.</p>
+      <p>The application outputs all assessment data into a highly structured JSON format, guaranteeing easy downstream integration via APIs or Webhooks. Below is the structural schema demonstrating the comprehensive metadata captured during an assessment event.</p>
       
       <pre class="json-block">
 {
@@ -334,7 +334,7 @@
   "unitNumber": "A105",
   "building": "Bldg 1",
   "unitType": "Climate-Controlled",
-  "inspectorName": "John Doe",
+  "assessorName": "John Doe",
   "weather": "85°F Sunny",
   "items": {
     "red-fire-sprinkler": {
@@ -370,7 +370,7 @@
       "repairCostEstimate": 150.00
     }
   },
-  "runnerNotes": "Heavy tenant debris left behind. Requires full cleanout crew.",
+  "assessorNotes": "Heavy tenant debris left behind. Requires full cleanout crew.",
   "managerFollowUp": {
     "Schedule Maintenance Vendor": true,
     "Review Move-In Baseline JSON": true
