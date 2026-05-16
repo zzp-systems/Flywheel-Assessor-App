@@ -1,20 +1,16 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Flywheel Assessor App
 
-# Run and deploy your AI Studio app
+**Offline‑first field inspection tool for Texas self‑storage, built for Flywheel Investors.**
 
-This contains everything you need to run your app locally.
+The Flywheel Assessor App is an offline-first, mobile-optimized procedural inspection tool built for zero-latency operations in rural storage markets. It empowers the field operations team with a "Special Ops" workflow to rapidly capture photographic evidence, document condition deltas, and automatically generate Texas Property Code Chapter 59 compliant forms on the go.
 
-View your app in AI Studio: https://ai.studio/apps/e957db83-5c31-490a-8dc7-e46df6bc6df7
+### Links
+- 📄 [Product & Technical Reference PDF](public/Flywheel_Assessor_App_Reference.pdf)
+- 🌐 [Live App](https://ais-pre-vi6f23hrorcml6vqiedusa-691428297779.asia-southeast1.run.app)
+- 💻 [GitHub Repository](https://github.com/flywheel-investors/flywheel-assessor-app) *(Private)*
 
-## Run Locally
-
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### Built With
+- React
+- Vite
+- Tailwind CSS
+- Google Cloud Run
